@@ -97,6 +97,30 @@ def label(token, lang, thresholds, c=None):
     return "%s %s (%s)" % (attr, v, rule) if v is not None else "%s %s" % (attr, rule)
 
 
+# Ordine dei tratti dentro alcune sezioni, al posto di quello alfabetico:
+# - Influence (3): come sul wiki, ogni catena di miglioramenti da sinistra a
+#   destra (Connected -> Puppet Master, Eminent -> Famous -> Megastar...);
+# - Nation (4): dal piu' comune al piu' estremo, scelto dall'utente.
+# Wealth (1) va per denaro al mese (incomeMoney), che e' anche la sua catena.
+TRAIT_ORDER = {
+    3: ["LowProfile", "Connected", "PuppetMaster", "Eminent", "Famous", "Megastar",
+        "OpinionLeader", "MediaDarling", "ElderStatesman", "Counselor", "Unifier",
+        "Agitator", "Firebrand", "Demagogue"],
+    4: ["Government", "Criminal", "EnemyoftheState", "Pariah", "NationalHero"],
+}
+
+
+def _trait_rank(k, t):
+    """Chiave d'ordine dentro la sezione: prima della chiave c'e' il nome."""
+    g = t.get("grouping")
+    if g == 1:
+        return t.get("incomeMoney") or 0
+    order = TRAIT_ORDER.get(g)
+    if order and k in order:
+        return order.index(k)
+    return len(order) if order else 0
+
+
 def options(lang, used=()):
     """Cosa si puo' scegliere: tratti che un candidato puo' avere (niente aumenti,
     niente gradi da XP o da eventi), missioni, attributi. `used`: tratti gia'
@@ -114,7 +138,9 @@ def options(lang, used=()):
                 for m in gamedata.player_missions()]
     attrs = [{"id": a, "name": gamedata.resource_name(lang, a)} for a in ATTRS]
     by_name = lambda xs: sorted(xs, key=lambda x: x["name"].lower())
-    return {"traits": by_name(traits), "missions": by_name(missions), "attributes": attrs}
+    # dentro ogni sezione: l'ordine di TRAIT_ORDER / incomeMoney, poi il nome
+    traits = sorted(by_name(traits), key=lambda x: _trait_rank(x["id"], tpl["traits"][x["id"]]))
+    return {"traits": traits, "missions": by_name(missions), "attributes": attrs}
 
 
 def _test(c, token, thresholds, new_only):
