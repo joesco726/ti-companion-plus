@@ -20,7 +20,7 @@
 import { loadPyodide } from "/pyodide/pyodide.mjs";
 
 const POLL_MS = 3000;
-const HOME = "/home/pyodide/.terrainvicta-companion";   // paths.data_dir()
+const HOME = "/home/pyodide/.ti-companion-plus";   // paths.data_dir()
 const PERSIST = ["companion.db", "presets.json"];       // cio' che store/presets scrivono
 
 let py = null;

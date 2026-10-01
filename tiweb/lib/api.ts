@@ -5,7 +5,7 @@ import { engine, engineMode, type EngineStatus, type LiveEvent } from "./engine"
 import type { Alert, Snapshot } from "./types";
 
 export const API =
-  process.env.NEXT_PUBLIC_API ?? "http://127.0.0.1:8732";
+  process.env.NEXT_PUBLIC_API ?? "http://127.0.0.1:8733";
 
 /** Errore di una rotta: `message` e' il testo per l'utente (il `detail` di
  *  FastAPI o l'errore del motore nel browser), `status` il codice HTTP. */

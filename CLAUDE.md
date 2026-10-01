@@ -1,5 +1,29 @@
 # TerraInvictaCompanion
 
+## This repository: TI Companion Plus
+
+joesco726's spinoff of b4p3p's Terra Invicta Companion
+(<https://github.com/b4p3p/terrainvicta-companion>). The owner does not speak Italian:
+**answer in English** and use the game's English terms (Persuasion, Investigation,
+Espionage, Command, Administration, Science, Security, Loyalty). This overrides
+"rispondere in italiano" below; everything else in this file still applies. Explain
+Italian code, comments and commit messages in English when they come up.
+
+Two kinds of change, never mixed in one branch or commit:
+
+- **Spinoff-only** (name, links, ports 8733/3033, data folder `~/.ti-companion-plus/`,
+  About page, this section): stays in this repository, written in English.
+- **Features** that b4p3p might merge one day: branch from `upstream/main`, not from our
+  `main`, and write them in his style: Italian comments and commit messages, the project
+  rules below. Then merge the branch into our `main`. Remotes are not stored in the
+  repository, so in a new session add his first:
+  `git remote add upstream https://github.com/b4p3p/terrainvicta-companion`.
+
+Features are built here first and offered to him only once finished: the owner asks
+him then, not before. To offer one, push the same branch to a fork of his repository
+used only for pull requests, never for spinoff changes. Bring his updates
+in with `git fetch upstream` and a merge of `upstream/main` into our `main`.
+
 Companion di partita per **Terra Invicta**, pensato per restare aperto su un secondo
 monitor mentre si gioca. L'utente gioca in **italiano**: rispondere in italiano e usare
 i nomi italiani del gioco (Persuasione, Indagine, Spionaggio, Comando, Amministrazione,
@@ -34,8 +58,8 @@ l'evento non arriva e dal secondo reload in poi non succede più nulla.
 Oppure separatamente:
 
 ```bash
-python -m watchfiles --filter python --sigint-timeout 2 --sigkill-timeout 1 "python -m uvicorn tiserver.main:app --host 127.0.0.1 --port 8732 --timeout-graceful-shutdown 2" ticore tiserver
-cd tiweb && npm run dev                            # interfaccia su :3000
+python -m watchfiles --filter python --sigint-timeout 2 --sigkill-timeout 1 "python -m uvicorn tiserver.main:app --host 127.0.0.1 --port 8733 --timeout-graceful-shutdown 2" ticore tiserver
+cd tiweb && npm run dev                            # interfaccia su :3033
 ```
 
 ## Architettura
@@ -66,7 +90,7 @@ ti.py       CLI sottile sopra ticore (utile senza browser).
 | `space.py` | scheda Spazio: habitat visibili (intel >= `intelToSeeSpaceAssetLocationandComposition`, 0,1: stessa regola della finestra Habitat), orbite terrestri coi posti, moduli sbloccati. Controllo missioni = ultima voce giornaliera delle `Transactions` |
 | `mining.py` | scheda Estrazione: tutti i siti con la resa **vera solo sui corpi prospettati** (intel sul corpo >= 1,0), altrove la stima del gioco (`GetHabSiteExpectedProductivity_month`) con forchetta; raggiungibilità da `effectToExplore`. «Valore» = resa × prezzo di mercato, euristica nostra. Org spaziali: nostre, del mercato, altrui entro l'intel (bersagli di Acquisizione ostile) |
 | `techs.py` | scheda Tecnologie: le tecnologie avviabili e cosa sblocca ognuna per la tua fazione (UniqueProjectUnlocks/ShouldHide del gioco). Percentuale = `GetProjectUnlockChance` come nella schermata Ricerca; i mesi di comparsa sono una stima nostra dalle regole dei trigger |
-| `store.py` | SQLite in `~/.terrainvicta-companion/`: storico, note, obiettivi. La campagna è identificata da **fazione + difficoltà + `realWorldCampaignStart`** |
+| `store.py` | SQLite in `~/.ti-companion-plus/`: storico, note, obiettivi. La campagna è identificata da **fazione + difficoltà + `realWorldCampaignStart`** |
 
 ### API
 `/api/snapshot?lang=` · `/api/alerts` · `/api/missions` · `/api/missions/{id}/plan`
@@ -101,7 +125,7 @@ Due livelli separati:
   arte di Pavonis Interactive e la MIT non le copre (vedi `LICENSE` e
   `assets/icons/README.md`). `tiserver/icons.py` serve prima quelle, e solo se manca
   qualcosa ricade sull'estrazione con UnityPy dall'installazione dell'utente verso
-  `~/.terrainvicta-companion/icons/`. UnityPy resta opzionale (`pip install -e .[icons]`).
+  `~/.ti-companion-plus/icons/`. UnityPy resta opzionale (`pip install -e .[icons]`).
 
 Struttura: `gamestates["PavonisInteractive.TerraInvicta.TIXxxState"]` è una lista di
 `{"Key":{"value":id},"Value":{…}}`. La fazione del giocatore si trova da `TIPlayerState`

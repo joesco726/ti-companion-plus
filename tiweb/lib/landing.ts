@@ -9,7 +9,9 @@
 
 import type { UiLang } from "./i18n";
 
-export const SITE_URL = "https://terrainvicta-companion.b4p3p.it";
+/** indirizzo del sito pubblicato; vuoto finche' non ce n'e' uno: niente
+ *  canonical, sitemap ne' url nei metadati */
+export const SITE_URL: string = "";
 
 export interface Landing {
   tagline: string;
@@ -71,7 +73,7 @@ const en: Landing = {
     },
     {
       q: "Is it free? Is it official?",
-      a: "Free, with no ads; donations are optional. It is a fan project, not affiliated with Pavonis Interactive or Hooded Horse.",
+      a: "Free, with no ads. It is a fan project, not affiliated with Pavonis Interactive or Hooded Horse.",
     },
   ],
 };
@@ -124,7 +126,7 @@ const it: Landing = {
     },
     {
       q: "È gratis? È ufficiale?",
-      a: "Gratis e senza pubblicità; le donazioni sono facoltative. È un progetto amatoriale, non affiliato a Pavonis Interactive né a Hooded Horse.",
+      a: "Gratis e senza pubblicità. È un progetto amatoriale, non affiliato a Pavonis Interactive né a Hooded Horse.",
     },
   ],
 };

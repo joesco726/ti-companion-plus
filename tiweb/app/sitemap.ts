@@ -6,5 +6,6 @@ export const dynamic = "force-static";
 /* Una sola pagina: senza salvataggio ogni scheda mostra la stessa
    presentazione, e le altre hanno il canonical sulla radice. */
 export default function sitemap(): MetadataRoute.Sitemap {
+  if (!SITE_URL) return [];
   return [{ url: `${SITE_URL}/`, lastModified: new Date(), changeFrequency: "weekly", priority: 1 }];
 }

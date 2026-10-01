@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useApi } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
-import { donationUrl, SITE, siteEmail } from "@/lib/site";
-import { Button, Panel } from "@/components/ui";
+import { SITE } from "@/lib/site";
+import { Panel } from "@/components/ui";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -62,30 +61,18 @@ function Versions() {
 export default function AboutPage() {
   const { t } = useSettings();
   const a = t.about;
-  const [email, setEmail] = useState<string | null>(null);
 
   return (
     <Panel title={a.title}>
-      {/* il lungomare di Bari, in testa e sfumato nel pannello: il testo resta
-          sul fondo normale. Il file non e' nel repo: se manca, la fascia resta
-          del colore del pannello. */}
-      {/* sempre intera (stesse proporzioni del file), mai piu' larga dei suoi
-          1916 px ne' piu' alta di meta' schermo: sugli schermi grandi resta
-          al centro e i lati sfumano nel pannello */}
-      <div aria-hidden className="-mx-3 -mt-3 mb-4">
-        <div className="mx-auto w-full max-w-[min(1916px,calc(52vh*1916/821))] aspect-[1916/821]
-            bg-no-repeat bg-cover bg-center
-            lg:[mask-image:linear-gradient(90deg,transparent,#000_7%,#000_93%,transparent)]"
-          style={{ backgroundImage:
-            "linear-gradient(180deg, transparent 82%, var(--raised) 100%), url(/about-bg.webp)" }} />
-      </div>
       {/* tutta la larghezza, come le altre schede: su schermi larghi due
           colonne invece di righe lunghissime */}
       <div>
       <div className="grid gap-x-10 gap-y-6 py-1 lg:grid-cols-2">
         <Section title={a.whoTitle}>
-          <p>{a.who.replace("{author}", SITE.author)}</p>
-          <p>{a.who2}</p>
+          <p>{a.who.replace("{name}", SITE.name).replace("{upstream}", SITE.upstream.name)
+            .replace("{upstreamAuthor}", SITE.upstream.author)}</p>
+          <p><a href={SITE.upstream.repo} target="_blank" rel="noopener noreferrer"
+            className="text-accent hover:underline">{SITE.upstream.repo.replace("https://", "")}</a></p>
         </Section>
 
         <Section title={a.whatTitle}>
@@ -98,30 +85,10 @@ export default function AboutPage() {
         </Section>
 
         <Section title={a.contactTitle}>
-          {email
-            ? <a href={`mailto:${email}`} className="text-accent hover:underline">{email}</a>
-            : <Button onClick={() => setEmail(siteEmail())}>{a.showEmail}</Button>}
+          <p>{a.contact}</p>
+          <p><a href={`${SITE.repo}/issues`} target="_blank" rel="noopener noreferrer"
+            className="text-accent hover:underline">{`${SITE.repo}/issues`.replace("https://", "")}</a></p>
         </Section>
-
-        {SITE.paypal && (
-          <Section title={a.supportTitle}>
-            <p>{a.support}</p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              {SITE.donations.map((d) => (
-                <a key={d.key} href={donationUrl(d.amount)} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3 h-9 border border-accent text-accent
-                    text-[13px] hover:bg-sel">
-                  <span aria-hidden>{a.donate[d.key].icon}</span>
-                  <span className="display text-[12px] uppercase tracking-[.08em]">{a.donate[d.key].label}</span>
-                  <span className="text-dim">
-                    {d.amount ? `${d.amount} €` : a.donateFree}
-                  </span>
-                </a>
-              ))}
-            </div>
-            <p className="text-faint text-[12px]">{a.donateHint}</p>
-          </Section>
-        )}
 
         <Versions />
 

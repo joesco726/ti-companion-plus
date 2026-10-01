@@ -51,7 +51,7 @@ export function gameLangFromBrowser(): string {
 }
 
 const it = {
-  appName: "Terra Invicta Companion",
+  appName: "TI Companion Plus",
   tabs: {
     overview: "Panoramica",
     council: "Consiglio",
@@ -64,29 +64,19 @@ const it = {
     space: "Spazio",
     mining: "Estrazione",
     techs: "Tecnologie",
-    about: "Chi sono",
+    about: "Informazioni",
   },
   about: {
-    title: "Chi sono",
-    whoTitle: "Chi c'è dietro",
-    who: "Sono {author}. Di giorno faccio il programmatore: fogli di calcolo, riunioni, numeri che non tornano. La sera, per staccare, apro Terra Invicta: fogli di calcolo, riunioni del consiglio, numeri che non tornano. Qualcuno la chiama cattiva gestione del tempo libero; io la chiamo coerenza.",
-    who2: "Dopo l'ennesima partita passata a saltare fra dieci schermate per capire quale consigliere mandare dove, ho fatto quello che fa ogni programmatore davanti a un problema da cinque minuti: ci ho passato settimane a scrivere un programma. Eccolo. Nazioni, consiglieri, missioni e preset uno accanto all'altro, su un secondo monitor, mentre gli alieni fanno i fatti loro.",
+    title: "Informazioni",
+    whoTitle: "Da dove viene",
+    who: "{name} è una versione derivata di {upstream}, di {upstreamAuthor}: stessa base, con funzioni in più. Il companion originale è opera sua.",
     whatTitle: "Cos'è, e cosa non è",
     what: "Uno strumento di lettura, non un aimbot. Mostra solo quello che il gioco già ti fa vedere: la lealtà reale dei consiglieri, l'intel che non hai e le altre informazioni nascoste restano nascoste.",
     heuristics: "Quando un numero è un'elaborazione nostra, come il punteggio dei bersagli di una missione, lo diciamo e mettiamo accanto i valori grezzi.",
     privacyTitle: "I tuoi dati",
     privacy: "I salvataggi non lasciano il tuo PC: il companion gira tutto nel browser e li legge dalla cartella che scegli tu. Niente account, niente tracciamento. Storico e note restano in questo browser: esportali dalla scheda Storico.",
     contactTitle: "Contatti",
-    showEmail: "Mostra email",
-    supportTitle: "Sostieni il progetto",
-    support: "Il companion è gratuito e resta gratuito, senza pubblicità. Se ti ha salvato un Colpo di Stato, o almeno qualche alt-tab, puoi offrirmi qualcosa: il caffè serve per il turno in ufficio, la pizza per quello su Terra Invicta.",
-    donate: {
-      coffee: { icon: "☕", label: "Un caffè" },
-      pizza: { icon: "🍕", label: "Una pizza" },
-      project: { icon: "🚀", label: "Finanzia un progetto" },
-    },
-    donateFree: "quanto vuoi",
-    donateHint: "Si apre PayPal con l'importo già scritto: puoi cambiarlo. Nessun progetto alieno verrà finanziato per errore.",
+    contact: "Segnalazioni, richieste e consigli: apri una issue su GitHub.",
     versionTitle: "Versione",
     versionApp: "Companion",
     versionData: "Dati di Terra Invicta",
@@ -486,7 +476,7 @@ const it = {
     save: "Salva",
     cancel: "Annulla",
     editorHint:
-      "Pesi da 1 a 3, «–» spegne la priorità. La quota è il peso diviso la somma dei pesi accesi: spegnere una voce alza tutte le altre. I preset personali stanno in ~/.terrainvicta-companion/presets.json.",
+      "Pesi da 1 a 3, «–» spegne la priorità. La quota è il peso diviso la somma dei pesi accesi: spegnere una voce alza tutte le altre. I preset personali stanno in ~/.ti-companion-plus/presets.json.",
     saved: "Salvato. Per averlo in partita: pulsante qui sopra, poi riavvia il gioco.",
     deleted: "Eliminato. Resta nel gioco finché non riscrivi.",
   },
@@ -810,7 +800,7 @@ const it = {
     dataTitle: "Dati del companion",
     dataBrowser:
       "Storico, note, obiettivi e preset personali stanno solo in questo browser: cambiando PC o cancellando i dati del sito si perdono. Esportali ogni tanto.",
-    dataServer: "Stanno in ~/.terrainvicta-companion/companion.db, sul PC dove gira l'API locale.",
+    dataServer: "Stanno in ~/.ti-companion-plus/companion.db, sul PC dove gira l'API locale.",
     dataCounts: "{snapshots} giorni archiviati in {campaigns} partite · {notes} note · {goals} obiettivi · {presets} preset personali · {size}",
     dataExport: "Esporta",
     dataImport: "Importa…",
@@ -892,7 +882,7 @@ const it = {
 };
 
 const en: typeof it = {
-  appName: "Terra Invicta Companion",
+  appName: "TI Companion Plus",
   tabs: {
     overview: "Overview",
     council: "Council",
@@ -909,25 +899,15 @@ const en: typeof it = {
   },
   about: {
     title: "About",
-    whoTitle: "Who's behind it",
-    who: "I'm {author}. By day I'm a programmer: spreadsheets, meetings, numbers that don't add up. In the evening, to unwind, I open Terra Invicta: spreadsheets, council meetings, numbers that don't add up. Some call it poor use of free time; I call it consistency.",
-    who2: "After yet another campaign spent jumping between ten screens to figure out which councilor to send where, I did what every programmer does with a five-minute problem: I spent weeks writing a program. Here it is. Nations, councilors, missions and presets side by side, on a second screen, while the aliens mind their own business.",
+    whoTitle: "Where it comes from",
+    who: "{name} is a spinoff of {upstream} by {upstreamAuthor}: the same foundation, with extra features. The original companion is their work.",
     whatTitle: "What it is, and what it isn't",
     what: "A reading tool, not an aimbot. It only shows what the game already lets you see: councilors' real loyalty, intel you don't have and other hidden information stay hidden.",
     heuristics: "When a number is our own computation, like a mission's target score, we say so and show the raw values next to it.",
     privacyTitle: "Your data",
     privacy: "Saves never leave your PC: the companion runs entirely in the browser and reads them from the folder you choose. No account, no tracking. History and notes stay in this browser: export them from the History tab.",
     contactTitle: "Contact",
-    showEmail: "Show email",
-    supportTitle: "Support the project",
-    support: "The companion is free and stays free, with no ads. If it saved you a Coup, or at least a few alt-tabs, you can buy me something: the coffee is for the office shift, the pizza for the Terra Invicta one.",
-    donate: {
-      coffee: { icon: "☕", label: "A coffee" },
-      pizza: { icon: "🍕", label: "A pizza" },
-      project: { icon: "🚀", label: "Fund a project" },
-    },
-    donateFree: "any amount",
-    donateHint: "PayPal opens with the amount already filled in: you can change it. No alien project will be funded by mistake.",
+    contact: "Bug reports, requests and suggestions: open an issue on GitHub.",
     versionTitle: "Version",
     versionApp: "Companion",
     versionData: "Terra Invicta data",
@@ -1327,7 +1307,7 @@ const en: typeof it = {
     save: "Save",
     cancel: "Cancel",
     editorHint:
-      "Weights 1 to 3, “–” turns the priority off. The share is the weight over the sum of active weights: turning one off raises all the others. Personal presets live in ~/.terrainvicta-companion/presets.json.",
+      "Weights 1 to 3, “–” turns the priority off. The share is the weight over the sum of active weights: turning one off raises all the others. Personal presets live in ~/.ti-companion-plus/presets.json.",
     saved: "Saved. To get it in game: button above, then restart the game.",
     deleted: "Deleted. It stays in the game until you rewrite.",
   },
@@ -1651,7 +1631,7 @@ const en: typeof it = {
     dataTitle: "Companion data",
     dataBrowser:
       "History, notes, goals and personal presets live only in this browser: changing PC or clearing the site's data loses them. Export them now and then.",
-    dataServer: "They live in ~/.terrainvicta-companion/companion.db, on the PC running the local API.",
+    dataServer: "They live in ~/.ti-companion-plus/companion.db, on the PC running the local API.",
     dataCounts: "{snapshots} days archived in {campaigns} campaigns · {notes} notes · {goals} goals · {presets} personal presets · {size}",
     dataExport: "Export",
     dataImport: "Import…",

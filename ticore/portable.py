@@ -4,7 +4,7 @@ personali.
 Nel browser questi dati vivono in quel browser (SQLite dentro Pyodide,
 copiato in IndexedDB): senza un export si perdono cambiando PC o cancellando i
 dati del sito, e lo storico accumulato dall'API locale in
-~/.terrainvicta-companion/ non ci arriverebbe mai.
+~/.ti-companion-plus/ non ci arriverebbe mai.
 
 L'export e' uno zip con `companion.db` e `presets.json`. L'import accetta lo
 zip, un `companion.db` nudo (quello dell'API locale) o un `presets.json`, e
@@ -137,6 +137,6 @@ def _merge_presets(data):
 
 
 def export_name(snap):
-    """terrainvicta-companion-<data di gioco>.zip, o senza data se non c'e'."""
+    """ti-companion-plus-<data di gioco>.zip, o senza data se non c'e'."""
     key = (snap or {}).get("dateKey")
-    return "terrainvicta-companion%s.zip" % ("-" + key if key else "")
+    return "ti-companion-plus%s.zip" % ("-" + key if key else "")

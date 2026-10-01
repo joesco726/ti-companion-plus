@@ -100,6 +100,6 @@ def bundle_dir():
 
 def data_dir():
     """Dove il companion tiene il suo database (fuori dalla cartella di gioco)."""
-    d = os.path.join(os.path.expanduser("~"), ".terrainvicta-companion")
+    d = os.path.join(os.path.expanduser("~"), ".ti-companion-plus")
     os.makedirs(d, exist_ok=True)
     return d

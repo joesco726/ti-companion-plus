@@ -11,6 +11,6 @@ git (vedi ROADMAP). Senza il gioco installato serve l'estratto prodotto da
 ```bash
 export TI_SAVES=$PWD/fixtures/saves          # salvataggi
 export TI_GAMEDATA=/percorso/estratto        # manifest.json, templates.json, loc/
-python3 -m uvicorn tiserver.main:app --port 8732   # API locale
+python3 -m uvicorn tiserver.main:app --port 8733   # API locale
 cd tiweb && npm run dev                       # copia l'estratto in public/gamedata
 ```

@@ -6,7 +6,7 @@ import { LANDING } from "@/lib/landing";
    legge le variabili CSS. */
 
 export const dynamic = "force-static";
-export const alt = "Terra Invicta Companion — a second-screen dashboard for Terra Invicta";
+export const alt = "TI Companion Plus — a second-screen dashboard for Terra Invicta";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

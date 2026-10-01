@@ -7,6 +7,7 @@
 
 import { LANDING } from "@/lib/landing";
 import { useSettings } from "@/lib/settings";
+import { SITE } from "@/lib/site";
 
 function H2({ children }: { children: React.ReactNode }) {
   return <h2 className="display text-[12px] uppercase tracking-[.14em] text-dim m-0 mb-3">{children}</h2>;
@@ -20,7 +21,7 @@ export function Landing() {
     <article className="w-full px-4 sm:px-8 pb-12 space-y-10 text-[13px] leading-relaxed">
       <header className="text-center space-y-2">
         <h1 className="display text-[22px] uppercase tracking-[.1em] m-0">
-          Terra Invicta Companion
+          {SITE.name}
           <span className="block text-[13px] tracking-[.14em] text-accent mt-1">{l.tagline}</span>
         </h1>
         <p className="text-dim m-0">{l.lead}</p>

@@ -1,10 +1,10 @@
 # Avvia API e interfaccia del companion, poi apre il browser.
-#   .\start.ps1            porte 8732 / 3000
+#   .\start.ps1            porte 8733 / 3033
 #   .\start.ps1 -NoBrowser
 
 param(
-    [int]$ApiPort = 8732,
-    [int]$WebPort = 3000,
+    [int]$ApiPort = 8733,
+    [int]$WebPort = 3033,
     [switch]$NoBrowser,
     [switch]$NoReload      # l'API non si ricarica da sola al cambio dei sorgenti
 )
@@ -42,7 +42,7 @@ $api = Start-Process -PassThru -WindowStyle Minimized python `
 # risolvere su npm.ps1 o sullo script sh senza estensione, che si aprono nel
 # Blocco note invece di partire.
 $web = Start-Process -PassThru -WindowStyle Minimized npm.cmd `
-    -ArgumentList "run", "dev" `
+    -ArgumentList "run", "dev", "--", "-p", "$WebPort" `
     -WorkingDirectory (Join-Path $root "tiweb")
 
 if (-not $NoBrowser) {

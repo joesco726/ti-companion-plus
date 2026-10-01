@@ -30,24 +30,23 @@ const DESCRIPTION =
   "nations, councilors, missions, factions and technologies side by side. No cheats, no uploads.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: { default: "Terra Invicta Companion", template: "%s · Terra Invicta Companion" },
+  title: { default: SITE.name, template: `%s · ${SITE.name}` },
   description: DESCRIPTION,
-  applicationName: "Terra Invicta Companion",
+  applicationName: SITE.name,
   authors: [{ name: SITE.author }],
   /* senza salvataggio ogni scheda mostra la stessa presentazione: una sola
-     pagina da indicizzare, le altre rimandano qui */
-  alternates: { canonical: "/" },
+     pagina da indicizzare, le altre rimandano qui. Solo con un sito pubblicato. */
+  ...(SITE_URL ? { metadataBase: new URL(SITE_URL), alternates: { canonical: "/" } } : {}),
   openGraph: {
     type: "website",
-    url: "/",
-    siteName: "Terra Invicta Companion",
-    title: "Terra Invicta Companion",
+    ...(SITE_URL ? { url: "/" } : {}),
+    siteName: SITE.name,
+    title: SITE.name,
     description: DESCRIPTION,
     locale: "en_GB",
     alternateLocale: ["it_IT"],
   },
-  twitter: { card: "summary_large_image", title: "Terra Invicta Companion", description: DESCRIPTION },
+  twitter: { card: "summary_large_image", title: SITE.name, description: DESCRIPTION },
 };
 
 /* Dati strutturati per motori di ricerca e LLM: cos'e' e le domande della
@@ -57,8 +56,8 @@ const JSON_LD = JSON.stringify([
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "Terra Invicta Companion",
-    url: SITE_URL,
+    name: SITE.name,
+    ...(SITE_URL ? { url: SITE_URL } : {}),
     description: DESCRIPTION,
     applicationCategory: "GameApplication",
     operatingSystem: "Windows, macOS, Linux (Chrome or Edge)",
