@@ -38,6 +38,17 @@ def is_augment(data_name):
     return "Augmented" in (t.get("tags") or []) or bool(t.get("projectDataName"))
 
 
+def spawnable(data_name):
+    """Il tratto puo' uscire su un consigliere generato? `baseChance` per tutti,
+    `classChance` per tipo (es. 50 per le Celebrita'). A zero sono i gradi che si
+    comprano con l'XP (Senior, Chief, Iron Hand...) e i tratti da eventi
+    (Indebted, Marked...): fra i candidati del mercato non ci sono (verificato
+    sui candidati di quattro salvataggi)."""
+    t = gamedata.templates()["traits"].get(data_name) or {}
+    return (t.get("baseChance") or 0) > 0 or any(
+        (e or {}).get("chance", 0) > 0 for e in t.get("classChance") or [])
+
+
 def normalize(p, thresholds=None):
     """Il profilo come lo salviamo: campi noti, condizioni valide, niente doppioni."""
     p = p if isinstance(p, dict) else {}
@@ -86,11 +97,14 @@ def label(token, lang, thresholds, c=None):
     return "%s %s (%s)" % (attr, v, rule) if v is not None else "%s %s" % (attr, rule)
 
 
-def options(lang):
-    """Cosa si puo' scegliere: tratti (senza aumenti), missioni, attributi."""
+def options(lang, used=()):
+    """Cosa si puo' scegliere: tratti che un candidato puo' avere (niente aumenti,
+    niente gradi da XP o da eventi), missioni, attributi. `used`: tratti gia'
+    nei profili salvati, che restano nella lista anche se esclusi."""
     tpl = gamedata.templates()
     traits = [{"id": k, "name": gamedata.trait_name(lang, k)}
-              for k in tpl["traits"] if k != "dummy" and not is_augment(k)]
+              for k in tpl["traits"]
+              if k in used or (k != "dummy" and not is_augment(k) and spawnable(k))]
     missions = [{"id": m, "name": gamedata.mission_name(lang, m)}
                 for m in gamedata.player_missions()]
     attrs = [{"id": a, "name": gamedata.resource_name(lang, a)} for a in ATTRS]
