@@ -247,6 +247,18 @@ class Service:
         out["mines"] = mining.mine_network(self.game)
         return out
 
+    def alert_options(self):
+        """Scelte del giocatore sulle allerte. factionLines: il motto della
+        fazione sulle portaerei d'assalto anche prima del primo sbarco."""
+        o = store.get_setting(self.con, "alertOptions") or {}
+        return {"factionLines": bool(o.get("factionLines"))}
+
+    def alert_options_set(self, body):
+        store.set_setting(self.con, "alertOptions",
+                          {"factionLines": bool((body or {}).get("factionLines"))})
+        self._realert()
+        return self.alert_options()
+
     def _body_watch(self):
         return watch.normalize(store.get_setting(self.con, "bodyWatch"))
 
@@ -431,7 +443,8 @@ class Service:
         return {"profiles": [p for p in allp if p.get("kind") != "org"],
                 "orgProfiles": [p for p in allp if p.get("kind") == "org"],
                 "thresholds": self._thresholds(),
-                "bodyWatch": self._body_watch()}
+                "bodyWatch": self._body_watch(),
+                "alertOptions": self.alert_options()}
 
     def _kind_of(self, profile_id):
         p = next((p for p in store.list_profiles(self.con) if p["id"] == profile_id), None)
@@ -616,4 +629,6 @@ _ROUTES = [
     ("DELETE", r"/api/orgprofiles/(\d+)",
      lambda s, q, b, i: s.org_profile_delete(int(i), q.get("lang"))),
     ("PUT", r"/api/mining/watch", lambda s, q, b: s.body_watch_set(b, q.get("lang"))),
+    ("GET", r"/api/alerts/options", lambda s, q, b: s.alert_options()),
+    ("PUT", r"/api/alerts/options", lambda s, q, b: s.alert_options_set(b)),
 ]
