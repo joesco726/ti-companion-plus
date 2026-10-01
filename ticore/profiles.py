@@ -49,6 +49,20 @@ def spawnable(data_name):
         (e or {}).get("chance", 0) > 0 for e in t.get("classChance") or [])
 
 
+def spawn_types(data_name):
+    """I tipi di consigliere su cui il tratto puo' uscire. Un tipo senza
+    probabilita' propria in `classChance` (voce assente, senza numero o a 0)
+    ricade su `baseChance`: verificato sui consiglieri generati a caso di
+    quattro salvataggi (205 diversi, nessuna eccezione). Le eccezioni sono i
+    consiglieri predefiniti del gioco (templateName «pregenC...», es. Levi
+    Newell, Commando con Social Scientist), che hanno tratti scelti a mano."""
+    t = gamedata.templates()["traits"].get(data_name) or {}
+    base = t.get("baseChance") or 0
+    own = {e.get("councilorClass"): e.get("chance", 0) for e in t.get("classChance") or []}
+    return [k for k in gamedata.templates()["councilorTypes"]
+            if k != "Alien" and (own.get(k, 0) > 0 or base > 0)]
+
+
 def normalize(p, thresholds=None):
     """Il profilo come lo salviamo: campi noti, condizioni valide, niente doppioni."""
     p = p if isinstance(p, dict) else {}
@@ -128,19 +142,31 @@ def options(lang, used=()):
     tpl = gamedata.templates()
     # `group` e' il `grouping` del template: le stesse sezioni del wiki ufficiale
     # (1 Wealth, 2 Scientist, 3 Influence... 20 National Priority), None = senza gruppo
+    # per il controllo delle combinazioni impossibili (RecruitProfiles.tsx):
+    # tipi su cui esce, missioni che da' e che toglie. Due tratti dello stesso
+    # `grouping` non escono insieme: su 205 consiglieri generati a caso nessuno
+    # ne ha due della stessa sezione.
     traits = [{"id": k, "name": gamedata.trait_name(lang, k),
-               "group": tpl["traits"][k].get("grouping")}
+               "group": tpl["traits"][k].get("grouping"),
+               "types": spawn_types(k),
+               "grants": tpl["traits"][k].get("missionsGrantedNames") or [],
+               "restricts": tpl["traits"][k].get("restrictedMissionNames") or []}
               for k in tpl["traits"]
               if k in used or (k != "dummy" and not is_augment(k) and spawnable(k))]
     # `attribute`: su cosa tira la missione (None per Advise, Proteggi...)
     missions = [{"id": m, "name": gamedata.mission_name(lang, m),
-                 "attribute": gamedata.mission_attribute(m)}
+                 "attribute": gamedata.mission_attribute(m),
+                 "types": [k for k, v in tpl["councilorTypes"].items()
+                           if k != "Alien" and m in (v.get("missionNames") or [])]}
                 for m in gamedata.player_missions()]
     attrs = [{"id": a, "name": gamedata.resource_name(lang, a)} for a in ATTRS]
     by_name = lambda xs: sorted(xs, key=lambda x: x["name"].lower())
     # dentro ogni sezione: l'ordine di TRAIT_ORDER / incomeMoney, poi il nome
     traits = sorted(by_name(traits), key=lambda x: _trait_rank(x["id"], tpl["traits"][x["id"]]))
-    return {"traits": traits, "missions": by_name(missions), "attributes": attrs}
+    types = [{"id": k, "name": gamedata.councilor_type_name(lang, k)}
+             for k in tpl["councilorTypes"] if k != "Alien"]
+    return {"traits": traits, "missions": by_name(missions), "attributes": attrs,
+            "types": by_name(types)}
 
 
 def _test(c, token, thresholds, new_only):

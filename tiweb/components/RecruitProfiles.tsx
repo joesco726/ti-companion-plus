@@ -15,6 +15,7 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
 import { AttrIcon, Button, Tag } from "@/components/ui";
+import { impossible, indexOf, possibleTypes } from "@/lib/profileCheck";
 
 type Severity = "warning" | "info";
 type ListKey = "all" | "any" | "none";
@@ -30,12 +31,18 @@ export interface Profile {
   newMissionsOnly: boolean;
 }
 
-interface Option { id: string; name: string; group?: number | null; attribute?: string | null }
+export interface Option {
+  id: string; name: string; group?: number | null; attribute?: string | null;
+  /** tipi di consigliere su cui il tratto esce / che hanno la missione */
+  types?: string[];
+  /** solo tratti: missioni che da' e che toglie */
+  grants?: string[]; restricts?: string[];
+}
 
 export interface ProfilesData {
   profiles: Profile[];
   thresholds: { high: number; low: number };
-  options: { traits: Option[]; missions: Option[]; attributes: Option[] };
+  options: { traits: Option[]; missions: Option[]; attributes: Option[]; types: Option[] };
   /** id profilo (stringa) -> candidati che corrispondono */
   matches: Record<string, { id: number; name: string; met: string[] }[]>;
 }
@@ -202,6 +209,11 @@ function Editor({ start, data, onSave, onCancel }: {
   const [d, setD] = useState<Profile>(start);
   const [err, setErr] = useState<string | null>(null);
   const empty = d.all.length === 0 && d.any.length === 0;
+  const label = useLabel(data);
+  const ix = indexOf(data);
+  const bad = empty ? null : impossible(d, ix);
+  const typeName = (id: string) => data.options.types.find((x) => x.id === id)?.name ?? id;
+  const types = empty || bad ? [] : possibleTypes(d, ix);
   return (
     <div className="border border-accent/50 bg-panel p-3 space-y-3">
       <div className="flex flex-wrap items-center gap-3 text-[12.5px]">
@@ -223,6 +235,20 @@ function Editor({ start, data, onSave, onCancel }: {
       </div>
       <ConditionGrid d={d} setD={setD} data={data} />
       {empty && <p className="text-warn text-[12px] m-0">{p.needCondition}</p>}
+      {bad && (
+        <p className="text-warn text-[12px] m-0">
+          <span aria-hidden className="mr-1">⚠</span>
+          {(bad.anyPart ? (bad.tokens.length ? p.impossibleAny : p.impossibleAnyAlone)
+            : bad.tokens.length === 1 ? p.impossibleOne
+            : p.impossible).replace("{items}", bad.tokens.map(label).join(" + "))}
+          {" "}<span className="text-dim">{p.impossibleHint}</span>
+        </p>
+      )}
+      {types.length > 0 && types.length < data.options.types.length && (
+        <p className="text-faint text-[12px] m-0">
+          {p.possibleTypes} {types.map(typeName).join(", ")}
+        </p>
+      )}
       {err && <p className="text-bad text-[12px] m-0">{err}</p>}
       <div className="flex gap-2">
         <Button tone="primary" disabled={!d.name.trim() || empty}
