@@ -248,8 +248,38 @@ def structural(cur, prev):
     return out
 
 
+def mine_network(cur, prev):
+    """Meno miniere attive di quante la rete ne regge senza controllo missioni
+    in piu' (mining.mine_network)."""
+    m = cur.get("mines") or {}
+    if m.get("free") is None or m["active"] >= m["free"]:
+        return []
+    lang = _lang(cur)
+    return [_alert("minenetwork", "info", t("alert.mines.title", lang, m["active"], m["free"]),
+                   t("alert.mines.detail", lang, m["free"] - m["active"], m["built"] - m["active"]),
+                   tab="space")]
+
+
+CARRIER_DAYS = 150                  # allerta critica entro questi giorni dall'arrivo
+
+
+def assault_carriers(cur, prev):
+    """Flotta aliena visibile con portaerei d'assalto che arriva in orbita
+    terrestre entro CARRIER_DAYS giorni (fleets.py)."""
+    lang = _lang(cur)
+    out = []
+    for f in cur.get("carriers") or []:
+        if f["days"] > CARRIER_DAYS:
+            continue
+        out.append(_alert("carrier:%s" % f["id"], "critical",
+                          t("alert.carrier.title", lang, f["name"], round(f["days"])),
+                          t("alert.carrier.detail", lang, f["arrival"], f["carriers"], f["ships"]),
+                          tab="space"))
+    return out
+
+
 RULES = [stalled_projects, low_resources, control_points, low_opinion, council_watch,
-         alien_watch, opportunities, structural]
+         alien_watch, opportunities, structural, mine_network, assault_carriers]
 
 
 def recruit_watch(cur, profiles):

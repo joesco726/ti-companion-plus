@@ -36,6 +36,8 @@ _TEMPLATE_FILES = {
     "miningProfiles": "TIMiningProfileTemplate.json",
     # i consiglieri predefiniti (pregenC...: Levi Newell...) e i modelli casuali
     "councilors": "TICouncilorTemplate.json",
+    # moduli delle navi: quali sbarcano un esercito (fleets.py)
+    "utilityModules": "TIUtilityModuleTemplate.json",
 }
 
 

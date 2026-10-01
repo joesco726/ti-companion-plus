@@ -136,6 +136,47 @@ def above_range(profile, body_tpl, global_mult, monthly):
     return keys, sum(monthly[k] for k in keys), sum(exp[k][2] for k in keys)
 
 
+# -- rete delle miniere ---------------------------------------------------------
+# TIFactionState.MineNetworkSize: habitat della fazione con una miniera attiva
+# (modulo 1 del settore 0 con `mine`, completato, non distrutto ne' in
+# smantellamento, alimentato). SafeMineNextworkSize: spaceMineFreebies +
+# effetti MCFreeSpaceMineNetwork. Oltre, ogni miniera costa controllo missioni
+# in piu' (GetMissionControlRequirementFromMineNetwork: n^2/2 sull'eccedenza).
+# Il gioco li mostra nel suggerimento del controllo missioni («rete di miniere»).
+
+SPACE_MINE_FREEBIES = 0             # TIGlobalConfig.spaceMineFreebies: assente dal JSON, 0 nel codice
+MINE_CONTEXT = "MCFreeSpaceMineNetwork"
+
+
+def mine_network(g):
+    """{"active": miniere attive, "built": miniere costruite, "free": quante ne
+    regge la rete senza controllo missioni in piu'} per la fazione del giocatore."""
+    my_id = (g.me.get("ID") or {}).get("value")
+    tpl = gamedata.templates()
+    mt = tpl["habModules"]
+    sectors, mods = g.state("TISectorState"), g.state("TIHabModuleState")
+    active = built = 0
+    for h in g.state("TIHabState").values():
+        if (h.get("faction") or {}).get("value") != my_id or not h.get("exists", True) or h.get("archived"):
+            continue
+        secs = h.get("sectors") or []
+        sec = sectors.get(secs[0].get("value")) if secs else None
+        refs = (sec or {}).get("habModules") or []
+        m = mods.get(refs[1].get("value")) if len(refs) > 1 else None
+        if not m or not (mt.get(m.get("templateName")) or {}).get("mine"):
+            continue
+        built += 1
+        if (m.get("constructionCompleted") and not m.get("destroyed")
+                and not m.get("decommissioning") and m.get("powered")):
+            active += 1
+    if SPACE_MINE_FREEBIES is None:
+        free = None
+    else:
+        free = int(transfer.apply_effects(tpl["effects"], transfer.faction_effects(g, my_id, MINE_CONTEXT),
+                                          SPACE_MINE_FREEBIES))
+    return {"active": active, "built": built, "free": free}
+
+
 def _my_effects(g, my_id):
     names = set()
     for es in g.state("TIEffectsState").values():

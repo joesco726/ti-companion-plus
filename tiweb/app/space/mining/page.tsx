@@ -41,6 +41,7 @@ interface Mining {
   launch: LaunchBody[];
   watch: Watch;
   boost: number;
+  mines: { active: number; built: number; free: number | null };
   resources: Res[];
   sites: Site[];
   prospectedBodies: number;
@@ -479,6 +480,11 @@ function Orgs({ data }: { data: Mining }) {
   );
 }
 
+/** sotto il tetto neutro, al tetto verde, poco sopra ambra, da 5 in su rosso:
+ *  il controllo missioni in piu' cresce col quadrato dell'eccedenza */
+const mineTone = (over: number) =>
+  over < 0 ? "accent" : over === 0 ? "mine" : over < 5 ? "warn" : "bad";
+
 export default function MiningPage() {
   const { t, game, live } = useSettings();
   const { data, error, reload } = useApi<Mining>(`/api/mining?lang=${game}`, [live.version, game]);
@@ -501,6 +507,12 @@ export default function MiningPage() {
         }>
         <p className="text-faint text-[11.5px] mb-3">{m.sub}</p>
         <div className="flex flex-wrap gap-2">
+          {data.mines.free != null && (
+            <Tip title={m.statMines} width={320} content={<p className="m-0">{m.statMinesHint}</p>}>
+              <Stat label={m.statMines} tone={mineTone(data.mines.active - data.mines.free)}
+                value={`${data.mines.active}/${data.mines.free}`} />
+            </Tip>
+          )}
           <Stat label={m.statProspected} value={data.prospectedBodies} />
           <Stat label={m.statReachable} value={`${reachable}/${data.sites.length}`} />
           <Stat label={m.statBonus} tone={data.orgMiningBonus ? "mine" : "accent"}
