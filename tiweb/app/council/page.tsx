@@ -80,15 +80,17 @@ export default function CouncilPage() {
       <MissionFinder team={team} missions={missions} market={snap.orgMarket} />
 
       <Panel title={t.council.team}>
-        {/* in testa e su tutta la larghezza: si trova senza scorrere le schede */}
+        {/* in testa e su tutta la larghezza: si trova senza scorrere le schede.
+            Bordo spesso e fondo appena tinto col colore della fazione: e' una
+            delle azioni piu' usate e deve vedersi subito */}
         <Link href="/recruits"
-          className="bg-panel border border-edge border-dashed rounded-lg px-3 py-2 mb-3
+          className="bg-accent/10 border-2 border-accent/70 border-dashed rounded-lg px-3 py-2.5 mb-3
                      flex flex-wrap items-baseline gap-x-4 gap-y-1
-                     hover:border-accent hover:bg-accent/5 transition-colors">
-          <span className="font-semibold text-[14px] text-accent">
+                     hover:border-accent hover:bg-accent/20 transition-colors">
+          <span className="font-semibold text-[15px] text-accent">
             {t.council.recruitCard}
           </span>
-          <span className="text-dim text-[12px]">
+          <span className="text-ink text-[12.5px]">
             {snap.recruits.length} {t.council.recruitCardHint}
           </span>
           {bestCover && (
@@ -100,7 +102,7 @@ export default function CouncilPage() {
               </span>
             </span>
           )}
-          <span className="text-accent text-[12px] ml-auto">{t.council.recruitOpen} →</span>
+          <span className="text-accent text-[12.5px] font-semibold ml-auto">{t.council.recruitOpen} →</span>
         </Link>
 
         <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
