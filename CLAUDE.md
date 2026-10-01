@@ -19,9 +19,9 @@ Two kinds of change, never mixed in one branch or commit:
   repository, so in a new session add his first:
   `git remote add upstream https://github.com/b4p3p/terrainvicta-companion`.
 
-Before building a feature, an issue on his repository asks whether he wants it (his
-`ROADMAP.md` is private). To offer a finished one, push the same branch to a fork of his
-repository used only for pull requests, never for spinoff changes. Bring his updates
+Features are built here first and offered to him only once finished: the owner asks
+him then, not before. To offer one, push the same branch to a fork of his repository
+used only for pull requests, never for spinoff changes. Bring his updates
 in with `git fetch upstream` and a merge of `upstream/main` into our `main`.
 
 Companion di partita per **Terra Invicta**, pensato per restare aperto su un secondo
