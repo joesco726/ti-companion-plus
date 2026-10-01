@@ -16,6 +16,7 @@ EU = {"Francia", "Germania", "Regno Unito", "Italia", "Spagna", "Polonia",
       "Repubblica Ceca", "Romania", "Ungheria", "Ucraina", "Turchia"}
 
 
+@gamedata.on_data_change
 @lru_cache(maxsize=1)
 def _eu_ids():
     s = gamedata.strings("ita")
@@ -605,14 +606,15 @@ def _global_values(g):
 
 
 def cp_cost(g, n):
-    """Costo di un punto di controllo della nazione `n` (ControlPointMaintenanceCost).
-    Il moltiplicatore della data d'inizio (CPMaintenanceModifier) vale 1 in
-    tutti gli scenari del gioco."""
+    """Costo di un punto di controllo della nazione `n` (ControlPointMaintenanceCost),
+    col moltiplicatore della data d'inizio (CPMaintenanceModifier): 1 negli
+    scenari base, 0,7 in Broken Earth (DLC Dark Skies)."""
     k = _global_values(g).get("fixedPCGDPToRaiseBaseCPMaintenanceCostBy1") or 0
     num = n.get("numControlPoints") or len(n.get("controlPoints") or [])
     if k <= 0 or not num or n.get("alienNation"):
         return 0.0
-    return ((n.get("GDP") or 0) / k) ** CP_COST_SCALING / (CP_COST_DIVISOR * num)
+    return (((n.get("GDP") or 0) / k) ** CP_COST_SCALING / (CP_COST_DIVISOR * num)
+            * gamedata.cp_maintenance_modifier())
 
 
 def cp_capacity(g):

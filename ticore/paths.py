@@ -139,6 +139,18 @@ def localization_dir():
     return p if p and os.path.isdir(p) else None
 
 
+def dlc_dir():
+    """<gioco>/DLC_Content: un DLC per cartella, con scenari dentro
+    (DarkSkies/Broken_Earth_Scenario/Templates, DarkSkies/Localization/...).
+    TI_DLC_DIR la sostituisce: per lavorare con una copia, senza il gioco."""
+    env = os.environ.get("TI_DLC_DIR")
+    if env and os.path.isdir(env):
+        return env
+    g = game_dir()
+    p = os.path.join(g, "DLC_Content") if g else None
+    return p if p and os.path.isdir(p) else None
+
+
 def bundle_dir():
     g = game_dir()
     p = os.path.join(g, _STREAMING, "AssetBundles") if g else None

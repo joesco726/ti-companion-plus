@@ -171,6 +171,10 @@ class Service:
                 break
         except Exception:
             pass                           # nel browser non c'e' una cartella da leggere
+        finally:
+            # un salvataggio di un'altra partita puo' aver cambiato scenario
+            if self.game is not None:
+                gamedata.use_scenario(self.game.scenario)
         return self._rprev or prev
 
     def languages(self):
