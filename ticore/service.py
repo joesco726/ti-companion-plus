@@ -14,7 +14,7 @@ import os
 import re
 from urllib.parse import unquote
 
-from . import (Game, SaveLocked, alerts, factions, gamedata, load, missions,
+from . import (Game, SaveLocked, alerts, factions, gamedata, load, missions, profiles,
                mining, model, paths, portable, presets, snapshot, space, store, techs, texts)
 from .texts import t
 
@@ -72,7 +72,7 @@ class Service:
         self.snapshot = snap
         self.trends = model.nation_trends(g)
         self.game = g
-        self.alerts = alerts.evaluate(snap, prev)
+        self.alerts = alerts.evaluate(snap, prev, self._profiles())
         self.loaded_mtime = g.mtime
         self.error = None
         return True
@@ -364,7 +364,7 @@ class Service:
         # lo storico e' cambiato: il "precedente" e le allerte vanno ricalcolati
         if self.snapshot:
             self.previous = store.previous_snapshot(self.con, self.snapshot)
-            self.alerts = alerts.evaluate(self.snapshot, self.previous)
+            self.alerts = alerts.evaluate(self.snapshot, self.previous, self._profiles())
         return dict(res, summary=self.data_summary())
 
     # -- note e obiettivi ---------------------------------------------------
@@ -397,6 +397,57 @@ class Service:
     def goal_delete(self, goal_id):
         store.delete_goal(self.con, goal_id)
         return {"ok": True}
+
+    # -- profili di reclutamento -------------------------------------------------
+
+    def _thresholds(self):
+        return profiles.normalize_thresholds(store.get_setting(self.con, "profileThresholds"))
+
+    def _profiles(self):
+        """Profili e soglie per le allerte (alerts.recruit_watch)."""
+        return {"profiles": store.list_profiles(self.con), "thresholds": self._thresholds()}
+
+    def _realert(self):
+        """Profili cambiati: le allerte sullo stesso salvataggio si rifanno."""
+        if self.snapshot:
+            self.alerts = alerts.evaluate(self.snapshot, self.previous, self._profiles())
+
+    def recruit_profiles(self, lang=None):
+        """Profili, soglie, cosa si puo' scegliere e chi corrisponde ora."""
+        self._switch(lang)
+        snap = self.require()
+        ctx = self._profiles()
+        hits = profiles.matches(snap, ctx["profiles"], ctx["thresholds"])
+        return dict(ctx, options=profiles.options(self.lang),
+                    matches={str(pid): [{"id": c["id"], "name": c["name"], "met": met}
+                                        for c, met in h] for pid, h in hits.items()})
+
+    def _profile_in(self, body):
+        p = profiles.normalize(body)
+        if not p["name"]:
+            raise ServiceError(400, t("err.profileName"))
+        return p
+
+    def profile_add(self, body, lang=None):
+        store.add_profile(self.con, self._profile_in(body))
+        self._realert()
+        return self.recruit_profiles(lang)
+
+    def profile_update(self, profile_id, body, lang=None):
+        if not store.update_profile(self.con, profile_id, self._profile_in(body)):
+            raise ServiceError(404, t("err.profileMissing"))
+        self._realert()
+        return self.recruit_profiles(lang)
+
+    def profile_delete(self, profile_id, lang=None):
+        store.delete_profile(self.con, profile_id)
+        self._realert()
+        return self.recruit_profiles(lang)
+
+    def profile_thresholds(self, body, lang=None):
+        store.set_setting(self.con, "profileThresholds", profiles.normalize_thresholds(body))
+        self._realert()
+        return self.recruit_profiles(lang)
 
     # -- instradamento --------------------------------------------------------
 
@@ -470,4 +521,12 @@ _ROUTES = [
     ("POST", r"/api/goals/(\d+)/done",
      lambda s, q, b, i: s.goal_done(int(i), _bool(q.get("done"), True))),
     ("DELETE", r"/api/goals/(\d+)", lambda s, q, b, i: s.goal_delete(int(i))),
+    ("GET", r"/api/profiles", lambda s, q, b: s.recruit_profiles(q.get("lang"))),
+    ("POST", r"/api/profiles", lambda s, q, b: s.profile_add(b, q.get("lang"))),
+    ("PUT", r"/api/profiles/thresholds",
+     lambda s, q, b: s.profile_thresholds(b, q.get("lang"))),
+    ("PUT", r"/api/profiles/(\d+)",
+     lambda s, q, b, i: s.profile_update(int(i), b, q.get("lang"))),
+    ("DELETE", r"/api/profiles/(\d+)",
+     lambda s, q, b, i: s.profile_delete(int(i), q.get("lang"))),
 ]

@@ -17,7 +17,7 @@ import os
 import sys
 from contextlib import contextmanager
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Body, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
@@ -360,6 +360,39 @@ def goal_delete(goal_id: int):
 
 
 # -------------------------------------------------------------------- SSE
+
+# ------------------------------------------------- profili di reclutamento
+# il corpo e' un dizionario qualunque: lo valida ticore/profiles.normalize()
+
+@app.get("/api/profiles")
+def recruit_profiles(lang: str = Query(None)):
+    with http_errors():
+        return state.recruit_profiles(lang)
+
+
+@app.post("/api/profiles")
+def profile_add(body: dict = Body(...), lang: str = Query(None)):
+    with http_errors():
+        return state.profile_add(body, lang)
+
+
+@app.put("/api/profiles/thresholds")
+def profile_thresholds(body: dict = Body(...), lang: str = Query(None)):
+    with http_errors():
+        return state.profile_thresholds(body, lang)
+
+
+@app.put("/api/profiles/{profile_id}")
+def profile_update(profile_id: int, body: dict = Body(...), lang: str = Query(None)):
+    with http_errors():
+        return state.profile_update(profile_id, body, lang)
+
+
+@app.delete("/api/profiles/{profile_id}")
+def profile_delete(profile_id: int, lang: str = Query(None)):
+    with http_errors():
+        return state.profile_delete(profile_id, lang)
+
 
 @app.get("/api/stream")
 async def stream():

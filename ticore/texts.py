@@ -67,6 +67,10 @@ TEXTS = {
                         "en": "Organization within reach: %s"},
     "alert.org.detail": {"it": "%s. Può tenerla: %s.", "en": "%s. Can hold it: %s."},
     "alert.org.noIncome": {"it": "nessuna rendita", "en": "no income"},
+    "alert.recruit.title": {"it": "Candidato per «%s»: %s",
+                            "en": "Recruit matches «%s»: %s"},
+    "alert.recruit.detail": {"it": "%s, %s. Soddisfa: %s.",
+                             "en": "%s from %s. Meets: %s."},
     "alert.soon.title": {"it": "Progetto quasi concluso: %s",
                          "en": "Project almost done: %s"},
     "alert.soon.detail": {"it": "Mancano circa %.0f giorni.",
@@ -139,6 +143,9 @@ TEXTS = {
     "flow.Spoils": {"it": "Bottino", "en": "Spoils"},
 
     # ------------------------------------------------------------ errori
+    "err.profileName": {"it": "Il profilo ha bisogno di un nome.",
+                        "en": "The profile needs a name."},
+    "err.profileMissing": {"it": "Profilo non trovato.", "en": "Profile not found."},
     "err.noSnapshot": {"it": "Nessuno snapshot disponibile",
                        "en": "No snapshot available"},
     "err.nationNotFound": {"it": "Nazione non trovata.", "en": "Nation not found."},
