@@ -137,8 +137,18 @@ export const TONE: Record<State, string> = {
   any: "border-sky-300 text-sky-300 bg-sky-300/10",
   none: "border-bad text-bad bg-bad/10",
 };
-/** ordine delle sezioni dei tratti: quello del wiki, poi i tratti senza gruppo */
-const GROUP_ORDER = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, null];
+/** sezioni dei tratti (il `grouping` del gioco, come nel wiki) messe a righe:
+ *  le piccole affiancate, cosi' la griglia sta tutta senza scorrere. I gruppi
+ *  che non compaiono qui vanno in una riga prima di quelli senza gruppo. */
+const GROUP_ROWS: (number | null)[][] = [[1, 2, 3], [4, 5], [6, 7, 8, 9, 10], [19, 20]];
+const GROUP_ORDER: (number | null)[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, null];
+const groupRows = (present: (number | null)[]) => {
+  const placed = new Set(GROUP_ROWS.flat());
+  const rest = present.filter((g) => g != null && !placed.has(g));
+  return [...GROUP_ROWS, rest, [null]]
+    .map((row) => row.filter((g) => present.includes(g)))
+    .filter((row) => row.length);
+};
 type Tab = "traits" | "missions" | "attributes";
 
 /** Tutte le condizioni del profilo in una griglia: ogni etichetta e' spenta o
@@ -218,11 +228,19 @@ function ConditionGrid({ d, setD, data }: {
         <span className="text-faint text-[11.5px]">{p.legend}</span>
       </div>
 
-      <div className="max-h-[22rem] overflow-y-auto pr-1 space-y-2">
-        {tab === "traits" && groups.map(({ g, items }) => (
-          <div key={String(g)}>
-            <div className="text-dim text-[11px] uppercase tracking-[.06em] mb-1">{groupName(g)}</div>
-            <div className="flex flex-wrap gap-1.5">{items.map((o) => chip(`trait:${o.id}`, o.name))}</div>
+      <div className="space-y-3">
+        {tab === "traits" && groupRows(groups.map((x) => x.g)).map((row) => (
+          <div key={row.join("-")} className="flex flex-wrap gap-x-6 gap-y-3">
+            {row.map((g) => {
+              const items = groups.find((x) => x.g === g)!.items;
+              return (
+                // le sezioni con tanti tratti prendono piu' spazio nella riga
+                <div key={String(g)} className="min-w-[10rem]" style={{ flex: `${items.length} 1 0` }}>
+                  <div className="text-dim text-[11px] uppercase tracking-[.06em] mb-1">{groupName(g)}</div>
+                  <div className="flex flex-wrap gap-1.5">{items.map((o) => chip(`trait:${o.id}`, o.name))}</div>
+                </div>
+              );
+            })}
           </div>
         ))}
         {/* una colonna per attributo su cui tira la missione, poi quelle senza tiro */}
