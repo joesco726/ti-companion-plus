@@ -131,7 +131,15 @@ SLIM_FIELDS = {
                    "randomized", "alien", "randomizeTraits", "allowedIdeologies", "debugOnly"),
     "habSites": ("dataName", "miningProfileName"),
     "spaceBodies": ("dataName", "barycenterName", "objectType", "mass_kg", "density_gcm3",
-                    "semiMajorAxis_AU", "effectToExplore", "alternativeEffectToExplore"),
+                    "semiMajorAxis_AU", "effectToExplore", "alternativeEffectToExplore",
+                    # orbite: finestre di lancio dalla Terra (transfer.py)
+                    "semiMajorAxis_km", "eccentricity", "inclination_Deg", "longAscendingNode_Deg",
+                    "argPeriapsis_Deg", "meanAnomalyAtEpoch_Deg", "longPeriapsis_Deg",
+                    "meanLongitude_Deg",
+                    # spinta dalla Terra: atterraggio e irraggiamento (transfer.Launcher)
+                    "equatorialRadius_km", "meanRadius_km", "dimensionX_km", "dimensionY_km",
+                    "dimensionZ_km", "oblateness", "rotationPeriod_strHours", "atmosphere",
+                    "irradiatedMultiplier"),
 }
 
 

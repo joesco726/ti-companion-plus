@@ -89,12 +89,14 @@ ti.py       CLI sottile sopra ticore (utile senza browser).
 | `factions.py` | confronto fra fazioni, coi soli campi che l'intel sblocca: soglie e misure di `TIGlobalConfig`/`FactionView`. `councilors()`: i consiglieri altrui con le regole di `CouncilorView` (0,10 posizione senza nome, 0,25 identità, 0,50 attributi veri, 0,75 missione, nascosta in fase missioni); sotto 0,50 gli attributi sono la stima del gioco dal tipo |
 | `space.py` | scheda Spazio: habitat visibili (intel >= `intelToSeeSpaceAssetLocationandComposition`, 0,1: stessa regola della finestra Habitat), orbite terrestri coi posti, moduli sbloccati. Controllo missioni = ultima voce giornaliera delle `Transactions` |
 | `mining.py` | scheda Estrazione: tutti i siti con la resa **vera solo sui corpi prospettati** (intel sul corpo >= 1,0), altrove la stima del gioco (`GetHabSiteExpectedProductivity_month`) con forchetta; raggiungibilità da `effectToExplore`. «Valore» = resa × prezzo di mercato, euristica nostra. Org spaziali: nostre, del mercato, altrui entro l'intel (bersagli di Acquisizione ostile) |
+| `transfer.py` | finestra di lancio dalla Terra (penalità 0–50% sul tempo di viaggio, come la schermata Intel) e spinta di un modulo lanciato dalla Terra, ricalcolate come `GetNextHohmannLaunchWindowDate`/`GenericTransferBoostFromEarthSurface` dalle orbite dei template |
+| `watch.py` | corpi sorvegliati della scheda Estrazione: banda della finestra (−50…+50%, default −10…+10), sito libero, spinta opzionale per un Nucleo avamposto; allerta in `alerts.body_watch` |
 | `techs.py` | scheda Tecnologie: le tecnologie avviabili e cosa sblocca ognuna per la tua fazione (UniqueProjectUnlocks/ShouldHide del gioco). Percentuale = `GetProjectUnlockChance` come nella schermata Ricerca; i mesi di comparsa sono una stima nostra dalle regole dei trigger |
 | `store.py` | SQLite in `~/.ti-companion-plus/`: storico, note, obiettivi. La campagna è identificata da **fazione + difficoltà + `realWorldCampaignStart`** |
 
 ### API
 `/api/snapshot?lang=` · `/api/alerts` · `/api/missions` · `/api/missions/{id}/plan`
-· `/api/nations/trends` · `/api/nations/{name}/detail` · `/api/factions` (+ `councilors`) · `/api/space` · `/api/mining` · `/api/techs`
+· `/api/nations/trends` · `/api/nations/{name}/detail` · `/api/factions` (+ `councilors`) · `/api/space` · `/api/mining` (+ `watch`) · `/api/techs`
 · `/api/presets` (+ `install`, `restore`, `custom`)
 · `/api/nations` (dentro snapshot) · `/api/history` · `/api/campaigns` · `/api/diff`
 · `/api/goals` · `/api/notes` · `/api/saves` · `/api/languages` · `/api/stream` (SSE)
@@ -206,6 +208,14 @@ con `isAI == false`.
   Prima la lista dei siti (pannello del corpo, anche se non esplorabile) mostra
   solo la forchetta min–max attorno a media del profilo × fattore massa/densità
   (0,75–1,25). Verificato: resa vera / attesa, mediana 1,00 su 561 siti.
+- **Finestra di lancio** (IL di `TINaturalSpaceObjectState`/`TISpaceObjectState`): il
+  salvataggio non la contiene (`HohmannDates` resta vuoto), il gioco la ricalcola dalle
+  orbite dei template (`meanAnomalyAtEpoch_Deg` & co.) e dall'epoca del salvataggio.
+  Penalità = min(giorni alla prossima, giorni dalla precedente) / periodo sinodico, poi
+  `GenericTransfer_OffDate_PCT`. **Allunga solo il tempo di viaggio**: la spinta per un
+  modulo dalla Terra = massa × e^(Δv/EV) × 0,1, con Δv di Hohmann da LEO + atterraggio
+  (latitudine del sito dal salvataggio) ed EV = 2,11 alzato dai razzi
+  (`GenericTransferEV_kps`). Niente finestra per la Terra e le sue lune.
 - **Bonus spaziali delle org** (`TIOrgState.description`): `spaceDevBonus` →
   Finanziamenti; `spaceflightBonus` → Programma spaziale, Capacità di lancio,
   exovelivoli; `MCBonus` → Controllo missioni. Acquisizione ostile può colpire

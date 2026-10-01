@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from functools import lru_cache
 
-from . import council, gamedata, texts
+from . import council, gamedata, mining, texts
 from .names import Namer, bare, nation_id
 
 # Il filtro «Europa» delle nazioni. Scritto coi nomi italiani del gioco per
@@ -696,6 +696,8 @@ def snapshot(g, lang="ita"):
         "projects": projects(g, lang),
         "research": research(g, lang),
         "alienSites": alien_sites(g, lang),
+        # finestre di lancio e siti liberi dei corpi: le allerte dei corpi sorvegliati
+        "launch": mining.launch_bodies(g, lang),
         # la serie e' dal piu' recente (vedi _chrono): conta solo oggi. Con
         # any() l'allerta restava accesa per 32 giorni dopo essere rientrati
         "cpCapOverage": bool((g.me.get("history_CPCapOverageByDay") or [0])[0]),
