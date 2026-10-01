@@ -102,7 +102,10 @@ def options(lang, used=()):
     niente gradi da XP o da eventi), missioni, attributi. `used`: tratti gia'
     nei profili salvati, che restano nella lista anche se esclusi."""
     tpl = gamedata.templates()
-    traits = [{"id": k, "name": gamedata.trait_name(lang, k)}
+    # `group` e' il `grouping` del template: le stesse sezioni del wiki ufficiale
+    # (1 Wealth, 2 Scientist, 3 Influence... 20 National Priority), None = senza gruppo
+    traits = [{"id": k, "name": gamedata.trait_name(lang, k),
+               "group": tpl["traits"][k].get("grouping")}
               for k in tpl["traits"]
               if k in used or (k != "dummy" and not is_augment(k) and spawnable(k))]
     missions = [{"id": m, "name": gamedata.mission_name(lang, m)}
