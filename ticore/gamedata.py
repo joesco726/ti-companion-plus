@@ -52,18 +52,14 @@ def use_bundle(tpl, strings_by_lang, languages=None):
     global _bundle
     _bundle = {"templates": tpl, "strings": dict(strings_by_lang),
                "languages": list(languages or strings_by_lang)}
-    for f in (templates, strings, available_languages, mission_icon,
-              faction_colors, trait_description):
-        f.cache_clear()
+    _clear_caches()
 
 
 def use_game_files():
     """Torna a leggere dall'installazione del gioco."""
     global _bundle
     _bundle = None
-    for f in (templates, strings, available_languages, mission_icon,
-              faction_colors, trait_description):
-        f.cache_clear()
+    _clear_caches()
 
 
 def add_strings(lang, table):
@@ -86,6 +82,16 @@ def loaded_languages():
 
 @lru_cache(maxsize=1)
 def templates():
+    """I template del gioco, con sopra quelli dello scenario della partita
+    (use_scenario): per dataName, lo scenario aggiunge e sostituisce."""
+    out = _base_templates()
+    for fam, items in (_scenario_data() or {}).get("templates", {}).items():
+        if fam in out:
+            out[fam] = {**out[fam], **items}
+    return out
+
+
+def _base_templates():
     if _bundle:
         return {k: _bundle["templates"].get(k, {}) for k in (*_TEMPLATE_FILES, "projectUnlocks")}
     d = paths.template_dir()
@@ -133,7 +139,14 @@ def _project_unlocks(d):
 
 @lru_cache(maxsize=None)
 def strings(lang):
-    """{'TIMissionTemplate.displayName.GainInfluence': 'Controlla nazione', ...}"""
+    """{'TIMissionTemplate.displayName.GainInfluence': 'Controlla nazione', ...},
+    con sopra i testi dello scenario della partita."""
+    over = _scenario_strings(lang)
+    base = _base_strings(lang)
+    return {**base, **over} if over else base
+
+
+def _base_strings(lang):
     if _bundle:
         if lang not in _bundle["strings"] and _bundle.get("loader")                 and lang in _bundle["languages"]:
             try:
@@ -496,3 +509,210 @@ def obtainable_orgs():
     """
     return {n: o for n, o in templates()["orgs"].items()
             if o.get("allowedOnMarket") and not o.get("restricted")}
+
+
+# -- scenari dei DLC ----------------------------------------------------------
+# Uno scenario (Broken Earth, 2003 del DLC Dark Skies) ha template e testi suoi
+# in DLC_Content/<DLC>/<scenario>/Templates e DLC_Content/<DLC>/Localization/
+# <lingua>/<nome dello scenario>/. Valgono solo per le partite iniziate con
+# quello scenario: il salvataggio lo dice in TIMetadataState.scenarioDataname
+# (save.Game chiama use_scenario). Le partite normali restano coi dati base.
+
+_scenario = None
+
+
+def use_scenario(name):
+    """Lo scenario della partita (dataName del suo TIMetaTemplate), o None."""
+    global _scenario
+    name = name or None
+    if name == _scenario:
+        return
+    _scenario = name
+    _clear_caches()
+
+
+def current_scenario():
+    return _scenario
+
+
+def _clear_caches():
+    # tutto cio' che e' calcolato dai template o dai testi
+    for v in list(globals().values()):
+        if callable(v) and hasattr(v, "cache_clear"):
+            v.cache_clear()
+    for fn in _cache_hooks:
+        getattr(fn, "cache_clear", fn)()
+
+
+_cache_hooks = []
+
+
+def on_data_change(fn):
+    """Altri moduli con cache dai template (model._eu_ids) si registrano qui:
+    di una funzione con lru_cache si svuota la cache, le altre si chiamano."""
+    _cache_hooks.append(fn)
+    return fn
+
+
+def _load_json(p):
+    """JSON dei template; alcuni file dei DLC hanno commenti // (TIGlobalConfig)."""
+    with open(p, encoding="utf-8-sig") as f:
+        text = f.read()
+    try:
+        return json.loads(text)
+    except ValueError:
+        import re
+        clean = re.sub(r'^\s*//.*$|(?<=[,\[{\s])//[^"\n]*$', "", text, flags=re.M)
+        return json.loads(clean)
+
+
+@lru_cache(maxsize=1)
+def scenario_sources():
+    """{dataName: {"name", "dir", "loc", "postfix"}} degli scenari dei DLC
+    installati (o in TI_DLC_DIR)."""
+    root = paths.dlc_dir()
+    out = {}
+    if not root:
+        return out
+    for dlc in sorted(os.listdir(root)):
+        dlc_path = os.path.join(root, dlc)
+        if not os.path.isdir(dlc_path):
+            continue
+        for sub in sorted(os.listdir(dlc_path)):
+            meta_p = os.path.join(dlc_path, sub, "Templates", "TIMetaTemplate.json")
+            if not os.path.isfile(meta_p):
+                continue
+            try:
+                metas = _load_json(meta_p)
+            except Exception:
+                continue
+            metas = [m for m in (metas if isinstance(metas, list) else [])
+                     if isinstance(m, dict) and m.get("dataName")]
+            # nello stesso file stanno lo scenario e le sue parti (data d'inizio,
+            # nazioni...): cartella dei testi e suffisso sono quelli dello scenario,
+            # l'unico col suffisso
+            main = next((m for m in metas if m.get("scenarioLocalizationPostfix")),
+                        metas[0] if metas else None)
+            for m in metas:
+                out[m["dataName"]] = {
+                    "name": main.get("friendlyName") or main["dataName"],
+                    "dir": os.path.join(dlc_path, sub, "Templates"),
+                    "loc": os.path.join(dlc_path, "Localization"),
+                    "postfix": main.get("scenarioLocalizationPostfix") or "",
+                }
+    return out
+
+
+# i template di uno scenario che contano qui: le famiglie lette dal companion,
+# piu' la data d'inizio (moltiplicatore del costo dei punti di controllo)
+_SCENARIO_EXTRA = {"startTimes": "TIStartTimeTemplate.json"}
+
+
+@lru_cache(maxsize=None)
+def _scenario_from_dir(name):
+    src = scenario_sources().get(name)
+    if not src:
+        return None
+    tpl = {}
+    for fam, fn in {**_TEMPLATE_FILES, **_SCENARIO_EXTRA}.items():
+        p = os.path.join(src["dir"], fn)
+        if not os.path.isfile(p):
+            continue
+        try:
+            data = _load_json(p)
+        except Exception:
+            continue
+        tpl[fam] = {o["dataName"]: o for o in data if isinstance(o, dict) and o.get("dataName")}
+    return {"templates": tpl, "source": src}
+
+
+def _scenario_data():
+    """Template dello scenario corrente: dall'estratto se lo ha, altrimenti
+    dai file dei DLC."""
+    if not _scenario:
+        return None
+    key = ((_bundle or {}).get("scenarios") or {}).get(_scenario)
+    if key:
+        data = _bundle_scenario(key)
+        if data:
+            return data
+    return _scenario_from_dir(_scenario)
+
+
+def _scenario_strings(lang):
+    data = _scenario_data()
+    if not data:
+        return {}
+    if data.get("key"):
+        return _bundle_scenario_strings(data["key"], lang)
+    return _strings_dir_cached(_scenario, lang)
+
+
+def use_bundle_scenarios(index, loader):
+    """Gli scenari dell'estratto: `index` e' {dataName: cartella} (piu' dataName
+    possono stare nella stessa), `loader(cartella, file)` legge
+    «templates.json» o «loc/<lingua>.json» la prima volta che servono."""
+    _bundle["scenarios"] = dict(index)
+    _bundle["scenarioLoader"] = loader
+    _clear_caches()
+
+
+@lru_cache(maxsize=None)
+def _bundle_scenario(key):
+    try:
+        return {"templates": _bundle["scenarioLoader"](key, "templates.json"), "key": key}
+    except Exception:
+        return None
+
+
+@lru_cache(maxsize=None)
+def _bundle_scenario_strings(key, lang):
+    try:
+        return _bundle["scenarioLoader"](key, "loc/%s.json" % lang)
+    except Exception:
+        return {}
+
+
+@lru_cache(maxsize=None)
+def _strings_dir_cached(name, lang):
+    data = _scenario_from_dir(name)
+    return _read_scenario_strings((data or {}).get("source"), lang)
+
+
+def _read_scenario_strings(src, lang):
+    """I testi dello scenario in una lingua. Le chiavi col suffisso dello
+    scenario («TIOrgTemplate.displayName.Al-Qaida.BrokenEarth») valgono anche
+    senza: in questa partita sostituiscono quelle base."""
+    if not src:
+        return {}
+    d = os.path.join(src["loc"], lang, src["name"])
+    out = {}
+    if not os.path.isdir(d):
+        return out
+    post = src.get("postfix") or ""
+    for fn in sorted(os.listdir(d)):
+        p = os.path.join(d, fn)
+        if not os.path.isfile(p):
+            continue
+        try:
+            for line in open(p, encoding="utf-8", errors="ignore"):
+                if "=" in line and not line.lstrip().startswith(("#", "//")):
+                    k, v = line.split("=", 1)
+                    k, v = k.strip(), v.rstrip("\n")
+                    out[k] = v
+                    if post and k.endswith(post):
+                        out[k[:-len(post)]] = v
+        except Exception:
+            continue
+    return out
+
+
+def cp_maintenance_modifier():
+    """Moltiplicatore del costo dei punti di controllo della data d'inizio
+    (TIStartTimeTemplate.CPMaintenanceModifier): 1 negli scenari base, 0,7 in
+    Broken Earth."""
+    starts = ((_scenario_data() or {}).get("templates") or {}).get("startTimes") or {}
+    for s in starts.values():
+        if s.get("CPMaintenanceModifier"):
+            return s["CPMaintenanceModifier"]
+    return 1.0
