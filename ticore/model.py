@@ -620,14 +620,19 @@ def cp_capacity(g):
     mine = next((e.get("Value") or {} for e in fx.get("factionEffectsNames") or []
                  if (e.get("Key") or {}).get("value") == (g.me.get("ID") or {}).get("value")), {})
     tpl = gamedata.templates()["effects"]
+    names = mine.get("ControlPointMaintenance") or []
     # effetti additivi con valore negativo = tetto piu' alto (showTotal: Invert)
-    effects = -sum((tpl.get(name) or {}).get("value") or 0
-                   for name in mine.get("ControlPointMaintenance") or [])
+    effects = -sum((tpl.get(name) or {}).get("value") or 0 for name in names)
+    # effetti che i template letti non hanno (es. Effect_BSBE_... di un DLC,
+    # che toccano anche il costo dei punti): uso e tetto qui sotto non ne
+    # tengono conto, e l'interfaccia lo dice
+    unknown = sorted({n for n in names if n not in tpl})
     cap = base + councilors + effects
     return {
         "used": round(used, 2), "cap": cap, "free": round(cap - used, 2),
         "base": base, "councilors": councilors, "effects": effects,
         "habsMissing": bool(g.me.get("habs")),
+        "unknownEffects": unknown,
     }
 
 

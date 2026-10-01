@@ -18,6 +18,9 @@ _INCOME_RESOURCE = {
     "missionControl": "MissionControl",
 }
 
+# punti oltre il tetto dei punti di controllo oltre i quali l'allerta e' un avviso
+CP_OVER_WARN = 25
+
 # soglie: sotto queste una risorsa blocca le operazioni
 LOW = {"Influence": 15, "Operations": 10, "Money": 50}
 
@@ -194,8 +197,14 @@ def structural(cur, prev):
     """Problemi che non dipendono dal confronto: li segnaliamo comunque."""
     out = []
     if cur.get("cpCapOverage"):
+        # quanto oltre il tetto: fino a CP_OVER_WARN punti e' un'informazione,
+        # oltre un avviso. Con effetti sconosciuti (non nei template letti) uso
+        # e tetto non sono affidabili: resta un'informazione
+        cap = (cur.get("controlPoints") or {}).get("capacity") or {}
+        over = (cap.get("used") or 0) - (cap.get("cap") or 0)
+        sev = "warning" if over > CP_OVER_WARN and not cap.get("unknownEffects") else "info"
         out.append(_alert(
-            "cpcap", "warning", t("alert.cpcap.title", _lang(cur)),
+            "cpcap", sev, t("alert.cpcap.title", _lang(cur)),
             t("alert.cpcap.detail", _lang(cur),
               gamedata.project_name(_lang(cur), "Project_ManagementResearch")),
             tab="projects"))

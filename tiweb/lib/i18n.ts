@@ -278,6 +278,7 @@ const it = {
     cpCapOver: "Oltre il tetto di",
     cpCapHint: "Come la barra in alto nel gioco: ogni punto costa (PIL/K)^0,6 / 2, diviso fra i punti della sua nazione; i punti coi benefici sospesi non contano. Tetto = {base} di partenza + {councilors} da PER+CMD+AMM dei consiglieri + {effects} dai progetti.",
     cpCapHabs: "Gli habitat non sono conteggiati: il tetto reale può essere più alto.",
+    cpCapMod: "{n} effetti sui punti di controllo non sono nei dati del gioco letti dal companion e non sono conteggiati: uso e tetto possono essere diversi da quelli del gioco.",
   },
   council: {
     moreMissions: "+ {n} missioni",
@@ -1119,6 +1120,7 @@ const en: typeof it = {
     cpCapOver: "Over the cap by",
     cpCapHint: "Same as the in-game top bar: each point costs (GDP/K)^0.6 / 2, split among its nation's points; points with suspended benefits don't count. Cap = {base} base + {councilors} from councilors' PER+CMD+AMM + {effects} from projects.",
     cpCapHabs: "Habitats are not counted: the real cap may be higher.",
+    cpCapMod: "{n} control point effects aren't in the game data the companion reads and aren't counted: usage and cap may differ from the game's.",
   },
   council: {
     moreMissions: "+ {n} missions",
