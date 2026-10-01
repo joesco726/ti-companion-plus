@@ -19,7 +19,7 @@ export const ORG_BONUS_ICON: Record<string, string | null> = {
   governmentBonus: "ICO_government_priority", unityBonus: "ICO_unity_priority",
   oppressionBonus: "ICO_oppression_priority", militaryBonus: "ICO_military_priority",
   spoilsBonus: "ICO_spoils_priority", spaceDevBonus: "ICO_funding_priority",
-  spaceflightBonus: "ICO_spaceflightProgram_priority", MCBonus: "ICO_missionControl_priority",
+  spaceflightBonus: "ICO_launchFacilities_Priority", MCBonus: "ICO_missionControl_priority",
   miningBonus: null,
 };
 
