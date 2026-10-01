@@ -80,32 +80,33 @@ export default function CouncilPage() {
       <MissionFinder team={team} missions={missions} market={snap.orgMarket} />
 
       <Panel title={t.council.team}>
+        {/* in testa e su tutta la larghezza: si trova senza scorrere le schede */}
+        <Link href="/recruits"
+          className="bg-panel border border-edge border-dashed rounded-lg px-3 py-2 mb-3
+                     flex flex-wrap items-baseline gap-x-4 gap-y-1
+                     hover:border-accent hover:bg-accent/5 transition-colors">
+          <span className="font-semibold text-[14px] text-accent">
+            {t.council.recruitCard}
+          </span>
+          <span className="text-dim text-[12px]">
+            {snap.recruits.length} {t.council.recruitCardHint}
+          </span>
+          {bestCover && (
+            <span className="text-[12px]">
+              <span className="text-dim">{t.council.recruitBestCoverage}:</span>{" "}
+              {bestCover.name}
+              <span className="text-good ml-1">
+                {bestCover.covers?.length}/{missions.missing.length}
+              </span>
+            </span>
+          )}
+          <span className="text-accent text-[12px] ml-auto">{t.council.recruitOpen} →</span>
+        </Link>
+
         <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
           {team.map((c) => (
             <CouncilorCard key={c.id} c={c} variant="council" />
           ))}
-
-          <Link href="/recruits"
-            className="bg-panel border border-edge border-dashed rounded-lg p-3
-                       flex flex-col justify-center items-start gap-1
-                       hover:border-accent hover:bg-accent/5 transition-colors">
-            <span className="font-semibold text-[14px] text-accent">
-              {t.council.recruitCard}
-            </span>
-            <span className="text-dim text-[12px]">
-              {snap.recruits.length} {t.council.recruitCardHint}
-            </span>
-            {bestCover && (
-              <span className="text-[12px]">
-                <span className="text-dim">{t.council.recruitBestCoverage}:</span>{" "}
-                {bestCover.name}
-                <span className="text-good ml-1">
-                  {bestCover.covers?.length}/{missions.missing.length}
-                </span>
-              </span>
-            )}
-            <span className="text-accent text-[12px] mt-1">{t.council.recruitOpen} →</span>
-          </Link>
         </div>
       </Panel>
 
