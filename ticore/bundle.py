@@ -124,6 +124,10 @@ def _dump(path, obj):
 # famiglie grandi di cui ci servono pochi campi (ticore/mining.py): il resto
 # (orbite, note degli astronomi) peserebbe mezzo megabyte nel browser
 SLIM_FIELDS = {
+    # dei consiglieri predefiniti servono tipo, tratti e per quali fazioni
+    # escono (ticore/profiles.py); niente aspetto, voce, luogo di nascita
+    "councilors": ("dataName", "personalName", "familyName", "type", "traits",
+                   "randomized", "alien", "randomizeTraits", "allowedIdeologies", "debugOnly"),
     "habSites": ("dataName", "miningProfileName"),
     "spaceBodies": ("dataName", "barycenterName", "objectType", "mass_kg", "density_gcm3",
                     "semiMajorAxis_AU", "effectToExplore", "alternativeEffectToExplore"),

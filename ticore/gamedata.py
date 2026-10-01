@@ -34,6 +34,8 @@ _TEMPLATE_FILES = {
     "habSites": "TIHabSiteTemplate.json",
     "spaceBodies": "TISpaceBodyTemplate.json",
     "miningProfiles": "TIMiningProfileTemplate.json",
+    # i consiglieri predefiniti (pregenC...: Levi Newell...) e i modelli casuali
+    "councilors": "TICouncilorTemplate.json",
 }
 
 

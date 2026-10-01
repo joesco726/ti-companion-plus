@@ -15,7 +15,7 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
 import { AttrIcon, Button, Tag } from "@/components/ui";
-import { impossible, indexOf, RARE_PCT, typeChances } from "@/lib/profileCheck";
+import { impossible, indexOf, presetMatches, RARE_PCT, typeChances } from "@/lib/profileCheck";
 
 /** 0,4% / 3% / 25%: un decimale solo sotto l'1% */
 const fmtPct = (p: number) => { const v = p * 100; return `${v < 1 ? v.toFixed(1) : Math.round(v)}%`; };
@@ -44,10 +44,18 @@ export interface Option {
   chances?: Record<string, number>;
 }
 
+/** consigliere predefinito del gioco, con tratti fissi */
+export interface Preset {
+  id: string; name: string; type: string; traits: string[]; missions: string[]; ideologies: string[];
+}
+
 export interface ProfilesData {
   profiles: Profile[];
   thresholds: { high: number; low: number };
-  options: { traits: Option[]; missions: Option[]; attributes: Option[]; types: Option[] };
+  options: { traits: Option[]; missions: Option[]; attributes: Option[]; types: Option[];
+             presets: Preset[] };
+  /** ideologia della fazione del giocatore (Destroy, Resist...): quali predefiniti escono */
+  ideology?: string | null;
   /** id profilo (stringa) -> candidati che corrispondono */
   matches: Record<string, { id: number; name: string; met: string[] }[]>;
 }
@@ -219,6 +227,11 @@ function Editor({ start, data, onSave, onCancel }: {
   const bad = empty ? null : impossible(d, ix);
   const typeName = (id: string) => data.options.types.find((x) => x.id === id)?.name ?? id;
   const chances = empty || bad ? [] : typeChances(d, ix);
+  // impossibile per un consigliere generato a caso: forse un predefinito del gioco c'e'
+  const presets = bad ? presetMatches(d, data.options.presets) : [];
+  const forMe = presets.filter((x) => !data.ideology || x.ideologies.includes(data.ideology));
+  const notMe = presets.filter((x) => !forMe.includes(x));
+  const who = (xs: typeof presets) => xs.map((x) => `${x.name} (${typeName(x.type)})`).join(", ");
   const rare = chances.length > 0 && chances[0].p * 100 <= RARE_PCT ? chances[0] : null;
   const partLabel = (tok: string) => (tok === "any" ? p.any : label(tok));
   return (
@@ -242,13 +255,22 @@ function Editor({ start, data, onSave, onCancel }: {
       </div>
       <ConditionGrid d={d} setD={setD} data={data} />
       {empty && <p className="text-warn text-[12px] m-0">{p.needCondition}</p>}
-      {bad && (
+      {bad && forMe.length > 0 && (
+        <p className="text-warn text-[12px] m-0">
+          <span aria-hidden className="mr-1">⚠</span>
+          {p.presetOnly.replace("{who}", who(forMe))}
+          {" "}<span className="text-dim">{p.presetOnlyHint}</span>
+        </p>
+      )}
+      {bad && !forMe.length && (
         <p className="text-warn text-[12px] m-0">
           <span aria-hidden className="mr-1">⚠</span>
           {(bad.anyPart ? (bad.tokens.length ? p.impossibleAny : p.impossibleAnyAlone)
             : bad.tokens.length === 1 ? p.impossibleOne
             : p.impossible).replace("{items}", bad.tokens.map(label).join(" + "))}
-          {" "}<span className="text-dim">{p.impossibleHint}</span>
+          {" "}<span className="text-dim">
+            {notMe.length ? p.presetNotMine.replace("{who}", who(notMe)) : p.impossibleHint}
+          </span>
         </p>
       )}
       {rare && (

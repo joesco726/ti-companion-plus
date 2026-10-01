@@ -81,6 +81,38 @@ def spawn_types(data_name):
             if k != "Alien" and (own.get(k, 0) > 0 or base > 0)]
 
 
+def presets(lang):
+    """I consiglieri predefiniti del gioco con tratti scelti a mano
+    (TICouncilorTemplate, «pregenC...»): possono avere combinazioni che un
+    consigliere generato a caso non ha (Levi Newell: Commando con Social
+    Scientist e Military Scientist). Escono solo per le fazioni in
+    `allowedIdeologies`: nei salvataggi, 18 predefiniti su 18 stanno in una
+    fazione permessa. Quelli coi tratti casuali seguono le regole normali e
+    restano fuori, come quelli di debug."""
+    tpl = gamedata.templates()
+    out = []
+    for o in tpl.get("councilors", {}).values():
+        if o.get("randomized") or o.get("alien") or o.get("debugOnly") \
+                or o.get("randomizeTraits") or not o.get("traits"):
+            continue
+        typ = tpl["councilorTypes"].get(o.get("type")) or {}
+        traits = [tpl["traits"].get(t) or {} for t in o["traits"]]
+        missions = set(typ.get("missionNames") or [])
+        for t in traits:
+            missions |= set(t.get("missionsGrantedNames") or [])
+        for t in traits:
+            missions -= set(t.get("restrictedMissionNames") or [])
+        out.append({
+            "id": o["dataName"],
+            "name": ("%s %s" % (o.get("personalName") or "", o.get("familyName") or "")).strip(),
+            "type": o.get("type"),
+            "traits": o["traits"],
+            "missions": sorted(missions & set(gamedata.player_missions())),
+            "ideologies": o.get("allowedIdeologies") or [],
+        })
+    return out
+
+
 def normalize(p, thresholds=None):
     """Il profilo come lo salviamo: campi noti, condizioni valide, niente doppioni."""
     p = p if isinstance(p, dict) else {}
@@ -185,7 +217,7 @@ def options(lang, used=()):
     types = [{"id": k, "name": gamedata.councilor_type_name(lang, k)}
              for k in tpl["councilorTypes"] if k != "Alien"]
     return {"traits": traits, "missions": by_name(missions), "attributes": attrs,
-            "types": by_name(types)}
+            "types": by_name(types), "presets": presets(lang)}
 
 
 def _test(c, token, thresholds, new_only):
