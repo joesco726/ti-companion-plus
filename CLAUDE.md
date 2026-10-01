@@ -247,7 +247,9 @@ con `isAI == false`.
   IMMEDIATO da 60, FLASH da 20.
   Dopo il primo sbarco visto (pietra miliare `AliensLandArmy` nelle `milestones` della
   fazione: il gioco la completa per tutte e lo notifica) il dettaglio finisce col motto
-  della fazione (`alert.carrier.motto.<templateName>`).
+  della fazione (`alert.carrier.motto.<templateName>`), o sempre con l'opzione «motti delle
+  fazioni» delle allerte (impostazione `alertOptions.factionLines`, spenta di default:
+  i veterani raramente lasciano sbarcare una portaerei).
 - **Bonus spaziali delle org** (`TIOrgState.description`): `spaceDevBonus` →
   Finanziamenti; `spaceflightBonus` → Programma spaziale, Capacità di lancio,
   exovelivoli; `MCBonus` → Controllo missioni. Acquisizione ostile può colpire

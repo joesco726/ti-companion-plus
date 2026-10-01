@@ -265,14 +265,16 @@ CARRIER_DAYS = 150                  # allerta critica entro questi giorni dall'a
 CARRIER_TAGS = ((20, "flash"), (60, "immediate"), (CARRIER_DAYS, "priority"))
 
 
-def assault_carriers(cur, prev):
+def assault_carriers(cur, profiles=None):
     """Flotta aliena visibile con portaerei d'assalto che arriva in orbita
     terrestre entro CARRIER_DAYS giorni (fleets.py)."""
     lang = _lang(cur)
-    # dopo il primo sbarco visto, il motto della fazione in fondo al dettaglio
+    # il motto della fazione in fondo al dettaglio: dopo il primo sbarco visto,
+    # o sempre se il giocatore l'ha chiesto (opzione «factionLines», spenta)
     ctx = cur.get("carrierContext") or {}
+    lines = ((profiles or {}).get("alertOptions") or {}).get("factionLines")
     key = "alert.carrier.motto." + str(ctx.get("faction"))
-    motto = (" " + t(key, lang)) if ctx.get("landed") and key in TEXTS else ""
+    motto = (" " + t(key, lang)) if (ctx.get("landed") or lines) and key in TEXTS else ""
     out = []
     for f in cur.get("carriers") or []:
         if f["days"] > CARRIER_DAYS:
@@ -287,7 +289,7 @@ def assault_carriers(cur, prev):
 
 
 RULES = [stalled_projects, low_resources, control_points, low_opinion, council_watch,
-         alien_watch, opportunities, structural, mine_network, assault_carriers]
+         alien_watch, opportunities, structural, mine_network]
 
 
 def recruit_watch(cur, profiles):
@@ -356,7 +358,8 @@ def evaluate(cur, prev=None, profiles=None):
     out = []
     rules = [(r, (cur, prev)) for r in RULES] + [(recruit_watch, (cur, profiles)),
                                                   (org_watch, (cur, profiles)),
-                                                  (body_watch, (cur, profiles))]
+                                                  (body_watch, (cur, profiles)),
+                                                  (assault_carriers, (cur, profiles))]
     for rule, args in rules:
         try:
             out.extend(rule(*args) or [])
