@@ -427,6 +427,7 @@ def trait_effects(lang, data_name):
         if not stat:
             continue
         cond = bool(m.get("condition"))
+        when = _condition(m.get("condition"))
         if op == "SetToAnotherAttribute":
             if stat == "ApparentLoyalty" and m.get("strValue") == "Loyalty":
                 out.append({"kind": "transparent"})
@@ -436,11 +437,11 @@ def trait_effects(lang, data_name):
             continue
         if op == "SetToFixedValue":
             out.append({"kind": "statFixed", "stat": stat, "value": v,
-                        "conditional": cond})
+                        "conditional": cond, "when": when})
         elif op == "Additive":
             kind = {"Loyalty": "loyalty",
                     "ApparentLoyalty": "apparentLoyalty"}.get(stat, "stat")
-            e = {"kind": kind, "value": v, "conditional": cond}
+            e = {"kind": kind, "value": v, "conditional": cond, "when": when}
             if kind == "stat":
                 e["stat"] = stat
             out.append(e)
@@ -459,6 +460,34 @@ def trait_effects(lang, data_name):
         out.append({"kind": "rule", "rule": t["specialTraitRule"],
                     "value": t.get("specialTraitRuleValue")})
     return out
+
+
+# condizioni delle modifiche dei tratti (TICondition): tipo -> cosa misurano
+_NATION_CONDITIONS = {"TINationCondition_fDemocracy": "democracy",
+                      "TINationCondition_fEducation": "education",
+                      "TINationCondition_fCohesion": "cohesion",
+                      "TINationCondition_fInequality": "inequality",
+                      "TINationCondition_fUnrest": "unrest"}
+_SIGNS = {"LessThanOrEqualTo": "<=", "GreaterThanOrEqualTo": ">=", "LessThan": "<",
+          "GreaterThan": ">", "EqualTo": "="}
+
+
+def _condition(c):
+    """Quando vale una modifica: {"kind", "sign", "value", "resource"}, None se
+    non c'e' condizione o non la sappiamo leggere."""
+    if not c or not c.get("$type"):
+        return None
+    typ, sign = c["$type"], _SIGNS.get(c.get("sign"), "")
+    if typ in _NATION_CONDITIONS:
+        return {"kind": _NATION_CONDITIONS[typ], "sign": sign, "value": _num(c.get("strValue"))}
+    if typ == "TICouncilorCondition_bInHomeNation":
+        return {"kind": "homeNation"}
+    if typ == "TIGlobalCondition_bNuclearWeaponsUsed":
+        return {"kind": "nukesUsed"}
+    if typ == "TIFactionCondition_efResourceValue":
+        return {"kind": "resource", "resource": c.get("strIdx"), "sign": sign,
+                "value": _num(c.get("strValue"))}
+    return {"kind": "other", "type": typ}
 
 
 def councilor_type_name(lang, data_name):

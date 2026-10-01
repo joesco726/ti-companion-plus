@@ -74,10 +74,17 @@ export interface Councilor {
 }
 
 /** Effetto dichiarato dal template del tratto. Codici, tradotti dall'interfaccia. */
+/** quando vale una modifica condizionata di un tratto (gamedata._condition) */
+export interface TraitCondition {
+  kind: "democracy" | "education" | "cohesion" | "inequality" | "unrest"
+    | "homeNation" | "nukesUsed" | "resource" | "other";
+  sign?: string; value?: number | null; resource?: string; type?: string;
+}
+
 export type TraitEffect =
-  | { kind: "stat"; stat: Attr; value: number; conditional: boolean }
-  | { kind: "statFixed"; stat: string; value: number; conditional: boolean }
-  | { kind: "loyalty" | "apparentLoyalty"; value: number; conditional: boolean }
+  | { kind: "stat"; stat: Attr; value: number; conditional: boolean; when?: TraitCondition | null }
+  | { kind: "statFixed"; stat: string; value: number; conditional: boolean; when?: TraitCondition | null }
+  | { kind: "loyalty" | "apparentLoyalty"; value: number; conditional: boolean; when?: TraitCondition | null }
   | { kind: "transparent" }
   | { kind: "income"; resource: "money" | "influence" | "research" | "ops" | "boost";
       value: number }

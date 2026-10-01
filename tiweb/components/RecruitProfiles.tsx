@@ -15,6 +15,9 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
 import { AttrIcon, Button, Tag } from "@/components/ui";
+import { Tip } from "@/components/Tip";
+import { conditionText, describe, TONE as FX_TONE } from "@/components/CouncilorCard";
+import type { TraitEffect } from "@/lib/types";
 import { impossible, indexOf, presetMatches, RARE_PCT, typeChances } from "@/lib/profileCheck";
 
 /** 0,4% / 3% / 25%: un decimale solo sotto l'1% */
@@ -45,6 +48,9 @@ export interface Option {
   grants?: string[]; restricts?: string[];
   /** solo tratti: {tipo: probabilita' in %} su un consigliere nuovo */
   chances?: Record<string, number>;
+  /** solo tratti: descrizione del gioco ed effetti dal template */
+  description?: string | null;
+  effects?: TraitEffect[];
 }
 
 /** consigliere predefinito del gioco, con tratti fissi */
@@ -137,8 +143,18 @@ export const TONE: Record<State, string> = {
   any: "border-sky-300 text-sky-300 bg-sky-300/10",
   none: "border-bad text-bad bg-bad/10",
 };
-/** ordine delle sezioni dei tratti: quello del wiki, poi i tratti senza gruppo */
-const GROUP_ORDER = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, null];
+/** sezioni dei tratti (il `grouping` del gioco, come nel wiki) messe a righe:
+ *  le piccole affiancate, cosi' la griglia sta tutta senza scorrere. I gruppi
+ *  che non compaiono qui vanno in una riga prima di quelli senza gruppo. */
+const GROUP_ROWS: (number | null)[][] = [[1, 2, 3], [4, 5], [6, 7, 8, 9, 10], [19, 20]];
+const GROUP_ORDER: (number | null)[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, null];
+const groupRows = (present: (number | null)[]) => {
+  const placed = new Set(GROUP_ROWS.flat());
+  const rest = present.filter((g) => g != null && !placed.has(g));
+  return [...GROUP_ROWS, rest, [null]]
+    .map((row) => row.filter((g) => present.includes(g)))
+    .filter((row) => row.length);
+};
 type Tab = "traits" | "missions" | "attributes";
 
 /** Tutte le condizioni del profilo in una griglia: ogni etichetta e' spenta o
@@ -163,13 +179,34 @@ function ConditionGrid({ d, setD, data }: {
 
   const f = filter.trim().toLowerCase();
   const shown = (name: string) => !f || name.toLowerCase().includes(f);
-  const chip = (tok: string, name: string) => {
+  const chip = (tok: string, name: string, tip?: React.ReactNode) => {
     const st = stateOf(tok);
-    return (
-      <button key={tok} onClick={() => setState(tok, NEXT[st])} title={p.legend}
+    const button = (
+      <button key={tok} onClick={() => setState(tok, NEXT[st])} title={tip ? undefined : p.legend}
         className={`px-1.5 py-[1px] border text-[12px] text-left ${TONE[st]}`}>
         {MARK[st]}{name}
       </button>
+    );
+    return tip ? <Tip key={tok} title={name} width={320} content={tip}>{button}</Tip> : button;
+  };
+  /** cosa fa un tratto, come nella scheda del consigliere: un effetto per
+   *  riga, con la condizione per esteso, poi la descrizione del gioco */
+  const traitTip = (o: Option) => {
+    const fx = o.effects ?? [];
+    return (
+      <>
+        {fx.map((e, i) => {
+          const f = describe(e, t);
+          const when = "when" in e ? conditionText(e.when, t) : null;
+          return (
+            <div key={i} className={FX_TONE[f.tone]}>
+              {f.text}{when && <span className="text-faint"> — {when}</span>}
+            </div>
+          );
+        })}
+        {o.description && <p className={`m-0 text-faint italic ${fx.length ? "mt-1.5" : ""}`}>{o.description}</p>}
+        {!fx.length && !o.description && <span className="text-faint">—</span>}
+      </>
     );
   };
   const count = (kinds: string[]) => [...d.all, ...d.any, ...d.none]
@@ -218,11 +255,19 @@ function ConditionGrid({ d, setD, data }: {
         <span className="text-faint text-[11.5px]">{p.legend}</span>
       </div>
 
-      <div className="max-h-[22rem] overflow-y-auto pr-1 space-y-2">
-        {tab === "traits" && groups.map(({ g, items }) => (
-          <div key={String(g)}>
-            <div className="text-dim text-[11px] uppercase tracking-[.06em] mb-1">{groupName(g)}</div>
-            <div className="flex flex-wrap gap-1.5">{items.map((o) => chip(`trait:${o.id}`, o.name))}</div>
+      <div className="space-y-3">
+        {tab === "traits" && groupRows(groups.map((x) => x.g)).map((row) => (
+          <div key={row.join("-")} className="flex flex-wrap gap-x-6 gap-y-3">
+            {row.map((g) => {
+              const items = groups.find((x) => x.g === g)!.items;
+              return (
+                // le sezioni con tanti tratti prendono piu' spazio nella riga
+                <div key={String(g)} className="min-w-[10rem]" style={{ flex: `${items.length} 1 0` }}>
+                  <div className="text-dim text-[11px] uppercase tracking-[.06em] mb-1">{groupName(g)}</div>
+                  <div className="flex flex-wrap gap-1.5">{items.map((o) => chip(`trait:${o.id}`, o.name, traitTip(o)))}</div>
+                </div>
+              );
+            })}
           </div>
         ))}
         {/* una colonna per attributo su cui tira la missione, poi quelle senza tiro */}

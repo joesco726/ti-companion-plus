@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useSettings } from "@/lib/settings";
 import { currentDict, type Dict } from "@/lib/i18n";
 import { AttrIcon, MissionIcon, ResourceIcon, Tag, nf } from "@/components/ui";
-import { ATTRS, type Attr, type Councilor, type Income, type TraitEffect } from "@/lib/types";
+import { ATTRS, type Attr, type Councilor, type Income, type TraitCondition, type TraitEffect } from "@/lib/types";
 import { OrgTable } from "@/components/OrgBonuses";
 
 /* La scheda di un consigliere, uguale nel Consiglio e nel Reclutamento: le
@@ -49,8 +49,24 @@ export function IncomeLine({ income }: { income: Income }) {
   );
 }
 
+/** La condizione di una modifica in parole: «se Istruzione ≤ 6 nella nazione». */
+export function conditionText(w: TraitCondition | null | undefined, t: Dict): string | null {
+  if (!w) return null;
+  const c = t.recruit.cond;
+  const sign = (w.sign ?? "").replace("<=", "≤").replace(">=", "≥");
+  switch (w.kind) {
+    case "democracy": case "education": case "cohesion": case "inequality": case "unrest":
+      return c.nation.replace("{stat}", c[w.kind]).replace("{sign}", sign).replace("{value}", String(w.value ?? ""));
+    case "homeNation": return c.homeNation;
+    case "nukesUsed": return c.nukesUsed;
+    case "resource":
+      return c.resource.replace("{res}", w.resource ?? "").replace("{sign}", sign).replace("{value}", String(w.value ?? ""));
+    default: return t.recruit.conditional;
+  }
+}
+
 /** Un effetto del tratto in parole, col suo colore: verde aiuta, rosso costa. */
-function describe(e: TraitEffect, t: Dict): { text: string; tone: "good" | "bad" | "dim";
+export function describe(e: TraitEffect, t: Dict): { text: string; tone: "good" | "bad" | "dim";
   conditional?: boolean } {
   const r = t.recruit;
   const byValue = (v: number): "good" | "bad" | "dim" => (v > 0 ? "good" : v < 0 ? "bad" : "dim");
@@ -84,7 +100,7 @@ function describe(e: TraitEffect, t: Dict): { text: string; tone: "good" | "bad"
   }
 }
 
-const TONE = { good: "text-good", bad: "text-bad", dim: "text-dim" } as const;
+export const TONE = { good: "text-good", bad: "text-bad", dim: "text-dim" } as const;
 
 function Traits({ c }: { c: Councilor }) {
   const { t } = useSettings();
