@@ -22,6 +22,10 @@ export interface Org {
   attributes: Partial<Record<Attr, number>>;
   projectSlots: number;
   missionsGranted: string[];
+  /** bonus alle priorita' nazionali, allo spazio e all'estrazione: frazione (0.05 = +5%) */
+  bonuses?: Record<string, number>;
+  /** ricerca per categoria (Energy, SpaceScience...): frazione */
+  techBonuses?: Record<string, number>;
   requiresNationality: boolean;
   requiredTraits: string[];
   prohibitedTraits: string[];

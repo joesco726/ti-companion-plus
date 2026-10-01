@@ -34,6 +34,16 @@ def attr_short(attr, lang="ita"):
 
 ORG_ATTR_FIELD = {a: a[0].lower() + a[1:] for a in ATTRS}
 
+# bonus delle org (TIOrgState) alle priorita' nazionali e allo spazio, frazione
+# (0.05 = +5%). La chiave e' quella di gamedata.PRIORITIES, se c'e'.
+ORG_BONUS_FIELDS = {
+    "economyBonus": "economy", "welfareBonus": "welfare", "environmentBonus": "environment",
+    "knowledgeBonus": "knowledge", "governmentBonus": "government", "unityBonus": "unity",
+    "oppressionBonus": "oppression", "militaryBonus": "military", "spoilsBonus": "spoils",
+    "spaceDevBonus": "spaceProgram", "spaceflightBonus": None, "MCBonus": "missionControl",
+    "miningBonus": None,
+}
+
 
 def org_view(g, o, lang="ita"):
     """Org del salvataggio -> dizionario piatto con costi, rendite e requisiti."""
@@ -62,6 +72,11 @@ def org_view(g, o, lang="ita"):
         "attributes": {a: o.get(ORG_ATTR_FIELD[a]) or 0 for a in ATTRS
                        if o.get(ORG_ATTR_FIELD[a])},
         "projectSlots": o.get("projectCapacityGranted") or 0,
+        # priorita' nazionali, spazio ed estrazione: valori tirati per questa org
+        "bonuses": {f: o[f] for f in ORG_BONUS_FIELDS if o.get(f)},
+        # ricerca per categoria: fissa nel template, non tirata
+        "techBonuses": {b["category"]: b["bonus"] for b in tpl.get("techBonuses") or []
+                        if b.get("category") and b.get("bonus")},
         "missionsGranted": tpl.get("missionsGrantedNames") or [],
         "requiresNationality": bool(tpl.get("requiresNationality")),
         "requiredTraits": tpl.get("requiredOwnerTraits") or [],

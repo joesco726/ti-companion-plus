@@ -266,9 +266,29 @@ def recruit_watch(cur, profiles):
     return out
 
 
+def org_watch(cur, profiles):
+    """Org del mercato che corrispondono a un profilo delle org."""
+    org_profiles = (profiles or {}).get("orgProfiles") or []
+    lang = _lang(cur)
+    by_id = {p["id"]: p for p in org_profiles}
+    out = []
+    for pid, hits in recruit_profiles.org_matches(cur, org_profiles).items():
+        p = by_id[pid]
+        for o, met in hits:
+            out.append(_alert(
+                "orgprofile:%s:%s" % (pid, o["id"]), p["severity"],
+                t("alert.orgprofile.title", lang, p["name"], o["name"]),
+                t("alert.orgprofile.detail", lang, o.get("tier") or "?",
+                  ", ".join(recruit_profiles.org_label(x, lang, o) for x in met),
+                  ", ".join(o.get("eligible") or []) or "—"),
+                tab="council", org=o["name"], profile=pid))
+    return out
+
+
 def evaluate(cur, prev=None, profiles=None):
     out = []
-    rules = [(r, (cur, prev)) for r in RULES] + [(recruit_watch, (cur, profiles))]
+    rules = [(r, (cur, prev)) for r in RULES] + [(recruit_watch, (cur, profiles)),
+                                                  (org_watch, (cur, profiles))]
     for rule, args in rules:
         try:
             out.extend(rule(*args) or [])
@@ -276,5 +296,9 @@ def evaluate(cur, prev=None, profiles=None):
             out.append(_alert("ruleerror:%s" % rule.__name__, "info",
                               t("alert.ruleerror.title", _lang(cur)),
                               "%s: %s" % (rule.__name__, e)))
+    # con un profilo delle org attivo, l'allerta su ogni org acquistabile tace:
+    # avvisano solo le org che corrispondono ai profili
+    if any(p.get("enabled") for p in (profiles or {}).get("orgProfiles") or []):
+        out = [a for a in out if not a["id"].startswith("org:")]
     out.sort(key=lambda a: (SEVERITY_ORDER.get(a["severity"], 9), a["title"]))
     return out

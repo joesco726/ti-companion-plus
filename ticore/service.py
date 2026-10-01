@@ -404,8 +404,18 @@ class Service:
         return profiles.normalize_thresholds(store.get_setting(self.con, "profileThresholds"))
 
     def _profiles(self):
-        """Profili e soglie per le allerte (alerts.recruit_watch)."""
-        return {"profiles": store.list_profiles(self.con), "thresholds": self._thresholds()}
+        """Profili e soglie per le allerte (alerts.recruit_watch e org_watch).
+        Stanno nella stessa tabella: quelli delle org hanno kind «org»."""
+        allp = store.list_profiles(self.con)
+        return {"profiles": [p for p in allp if p.get("kind") != "org"],
+                "orgProfiles": [p for p in allp if p.get("kind") == "org"],
+                "thresholds": self._thresholds()}
+
+    def _kind_of(self, profile_id):
+        p = next((p for p in store.list_profiles(self.con) if p["id"] == profile_id), None)
+        if p is None:
+            raise ServiceError(404, t("err.profileMissing"))
+        return p.get("kind") or "recruit"
 
     def _realert(self):
         """Profili cambiati: le allerte sullo stesso salvataggio si rifanno."""
@@ -417,6 +427,7 @@ class Service:
         self._switch(lang)
         snap = self.require()
         ctx = self._profiles()
+        ctx.pop("orgProfiles", None)
         hits = profiles.matches(snap, ctx["profiles"], ctx["thresholds"])
         used = {x.split(":", 1)[1] for p in ctx["profiles"]
                 for x in p["all"] + p["any"] + p["none"] if x.startswith("trait:")}
@@ -439,12 +450,16 @@ class Service:
         return self.recruit_profiles(lang)
 
     def profile_update(self, profile_id, body, lang=None):
+        if self._kind_of(profile_id) != "recruit":
+            raise ServiceError(404, t("err.profileMissing"))
         if not store.update_profile(self.con, profile_id, self._profile_in(body)):
             raise ServiceError(404, t("err.profileMissing"))
         self._realert()
         return self.recruit_profiles(lang)
 
     def profile_delete(self, profile_id, lang=None):
+        if self._kind_of(profile_id) != "recruit":
+            raise ServiceError(404, t("err.profileMissing"))
         store.delete_profile(self.con, profile_id)
         self._realert()
         return self.recruit_profiles(lang)
@@ -453,6 +468,44 @@ class Service:
         store.set_setting(self.con, "profileThresholds", profiles.normalize_thresholds(body))
         self._realert()
         return self.recruit_profiles(lang)
+
+    # -- profili delle org -------------------------------------------------------
+
+    def org_profiles(self, lang=None):
+        """Profili delle org, cosa si puo' scegliere e quali org del mercato
+        corrispondono ora."""
+        self._switch(lang)
+        snap = self.require()
+        mine = self._profiles()["orgProfiles"]
+        hits = profiles.org_matches(snap, mine)
+        return {"profiles": mine, "options": profiles.org_options(self.lang),
+                "matches": {str(pid): [{"id": o["id"], "name": o["name"], "met": met}
+                                       for o, met in h] for pid, h in hits.items()}}
+
+    def _org_profile_in(self, body):
+        p = profiles.normalize(dict(body or {}, kind="org"))
+        if not p["name"]:
+            raise ServiceError(400, t("err.profileName"))
+        return p
+
+    def org_profile_add(self, body, lang=None):
+        store.add_profile(self.con, self._org_profile_in(body))
+        self._realert()
+        return self.org_profiles(lang)
+
+    def org_profile_update(self, profile_id, body, lang=None):
+        if self._kind_of(profile_id) != "org":
+            raise ServiceError(404, t("err.profileMissing"))
+        store.update_profile(self.con, profile_id, self._org_profile_in(body))
+        self._realert()
+        return self.org_profiles(lang)
+
+    def org_profile_delete(self, profile_id, lang=None):
+        if self._kind_of(profile_id) != "org":
+            raise ServiceError(404, t("err.profileMissing"))
+        store.delete_profile(self.con, profile_id)
+        self._realert()
+        return self.org_profiles(lang)
 
     # -- instradamento --------------------------------------------------------
 
@@ -534,4 +587,10 @@ _ROUTES = [
      lambda s, q, b, i: s.profile_update(int(i), b, q.get("lang"))),
     ("DELETE", r"/api/profiles/(\d+)",
      lambda s, q, b, i: s.profile_delete(int(i), q.get("lang"))),
+    ("GET", r"/api/orgprofiles", lambda s, q, b: s.org_profiles(q.get("lang"))),
+    ("POST", r"/api/orgprofiles", lambda s, q, b: s.org_profile_add(b, q.get("lang"))),
+    ("PUT", r"/api/orgprofiles/(\d+)",
+     lambda s, q, b, i: s.org_profile_update(int(i), b, q.get("lang"))),
+    ("DELETE", r"/api/orgprofiles/(\d+)",
+     lambda s, q, b, i: s.org_profile_delete(int(i), q.get("lang"))),
 ]

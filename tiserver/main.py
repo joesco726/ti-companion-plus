@@ -408,6 +408,32 @@ def profile_delete(profile_id: int, lang: str = Query(None)):
         return state.profile_delete(profile_id, lang)
 
 
+# ---------------------------------------------------------- profili delle org
+
+@app.get("/api/orgprofiles")
+def org_profiles(lang: str = Query(None)):
+    with http_errors():
+        return state.org_profiles(lang)
+
+
+@app.post("/api/orgprofiles")
+def org_profile_add(body: dict = Body(...), lang: str = Query(None)):
+    with http_errors():
+        return state.org_profile_add(body, lang)
+
+
+@app.put("/api/orgprofiles/{profile_id}")
+def org_profile_update(profile_id: int, body: dict = Body(...), lang: str = Query(None)):
+    with http_errors():
+        return state.org_profile_update(profile_id, body, lang)
+
+
+@app.delete("/api/orgprofiles/{profile_id}")
+def org_profile_delete(profile_id: int, lang: str = Query(None)):
+    with http_errors():
+        return state.org_profile_delete(profile_id, lang)
+
+
 @app.get("/api/stream")
 async def stream():
     q: asyncio.Queue = asyncio.Queue()
