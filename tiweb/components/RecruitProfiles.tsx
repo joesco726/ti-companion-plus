@@ -18,7 +18,7 @@ import { AttrIcon, Button, Tag } from "@/components/ui";
 import { Tip } from "@/components/Tip";
 import { conditionText, describe, TONE as FX_TONE } from "@/components/CouncilorCard";
 import type { TraitEffect } from "@/lib/types";
-import { impossible, indexOf, presetMatches, RARE_PCT, typeChances } from "@/lib/profileCheck";
+import { FAST_LEARNERS, impossible, indexOf, presetMatches, RARE_PCT, typeChances } from "@/lib/profileCheck";
 
 /** 0,4% / 3% / 25%: un decimale solo sotto l'1% */
 const fmtPct = (p: number) => { const v = p * 100; return `${v < 1 ? v.toFixed(1) : Math.round(v)}%`; };
@@ -37,6 +37,8 @@ export interface Profile {
   any: string[];
   none: string[];
   newMissionsOnly: boolean;
+  /** scorciatoia: oltre al resto, Quick Learner o Striver */
+  fastLearner?: boolean;
   /** fascia d'eta'; null = nessun limite da quella parte */
   ageMin?: number | null;
   ageMax?: number | null;
@@ -72,7 +74,7 @@ export interface ProfilesData {
 }
 
 const EMPTY: Profile = {
-  name: "", enabled: true, severity: "warning", all: [], any: [], none: [], newMissionsOnly: false,
+  name: "", enabled: true, severity: "warning", all: [], any: [], none: [], newMissionsOnly: false, fastLearner: false,
   ageMin: null, ageMax: null,
 };
 
@@ -315,7 +317,7 @@ function Editor({ start, data, onSave, onCancel }: {
   const p = t.recruit.profiles;
   const [d, setD] = useState<Profile>(start);
   const [err, setErr] = useState<string | null>(null);
-  const empty = d.all.length === 0 && d.any.length === 0;
+  const empty = d.all.length === 0 && d.any.length === 0 && !d.fastLearner;
   const label = useLabel(data);
   const ix = indexOf(data);
   const bad = empty ? null : impossible(d, ix);
@@ -327,7 +329,8 @@ function Editor({ start, data, onSave, onCancel }: {
   const notMe = presets.filter((x) => !forMe.includes(x));
   const who = (xs: typeof presets) => xs.map((x) => `${x.name} (${typeName(x.type)})`).join(", ");
   const rare = chances.length > 0 && chances[0].p * 100 <= RARE_PCT ? chances[0] : null;
-  const partLabel = (tok: string) => (tok === "any" ? p.any : label(tok));
+  const fastNames = FAST_LEARNERS.map(label).join(" / ");
+  const partLabel = (tok: string) => (tok === "any" ? p.any : tok === "fast" ? fastNames : label(tok));
   return (
     <div className="border border-accent/50 bg-panel p-3 space-y-3">
       <div className="flex flex-wrap items-center gap-3 text-[12.5px]">
@@ -346,6 +349,11 @@ function Editor({ start, data, onSave, onCancel }: {
           <input type="checkbox" checked={d.newMissionsOnly}
             onChange={(e) => setD({ ...d, newMissionsOnly: e.target.checked })} />
           {p.newOnly}
+        </label>
+        <label className="flex items-center gap-1.5" title={p.fastHint}>
+          <input type="checkbox" checked={!!d.fastLearner}
+            onChange={(e) => setD({ ...d, fastLearner: e.target.checked })} />
+          {p.fastLearner.replace("{names}", fastNames)}
         </label>
       </div>
       <ConditionGrid d={d} setD={setD} data={data} />
@@ -439,7 +447,9 @@ export function RecruitProfiles({ data, onChange }: {
   const summary = (pr: Profile) => ([
     ["all", p.all], ["any", p.any], ["none", p.none],
   ] as [ListKey, string][]).filter(([k]) => pr[k].length)
-    .map(([k, title]) => `${title}: ${pr[k].map(label).join(", ")}`).join(" · ");
+    .map(([k, title]) => `${title}: ${pr[k].map(label).join(", ")}`)
+    .concat(pr.fastLearner ? [p.fastLearner.replace("{names}", FAST_LEARNERS.map(label).join(" / "))] : [])
+    .join(" · ");
 
   const active = data.profiles.filter((x) => x.enabled).length;
   return (

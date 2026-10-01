@@ -142,6 +142,8 @@ def normalize(p, thresholds=None):
         "any": tokens("any"),
         "none": tokens("none"),
         "newMissionsOnly": bool(p.get("newMissionsOnly")),
+        # scorciatoia: oltre al resto, Quick Learner o Striver (FAST_LEARNERS)
+        "fastLearner": bool(p.get("fastLearner")),
         # fascia d'eta' (anni compiuti, come nella schermata di reclutamento);
         # None = nessun limite da quella parte
         "ageMin": _age(p.get("ageMin"), AGE_MIN),
@@ -282,7 +284,7 @@ def _test(c, token, thresholds, new_only):
 def match(c, p, thresholds):
     """Le condizioni soddisfatte (da mostrare nell'allerta), o None se il
     candidato non corrisponde al profilo."""
-    if not p.get("all") and not p.get("any"):
+    if not p.get("all") and not p.get("any") and not p.get("fastLearner"):
         return None
     # fascia d'eta': chi non ha una data di nascita non si esclude
     age = c.get("age")
@@ -299,8 +301,19 @@ def match(c, p, thresholds):
     # "non ha": la missione conta se c'e', che il consiglio la abbia o no
     if any(_test(c, x, thresholds, False) for x in p["none"]):
         return None
+    met_fast = []
+    if p.get("fastLearner"):
+        met_fast = [x for x in FAST_LEARNERS if _test(c, x, thresholds, False)]
+        if not met_fast:
+            return None
     with_age = ["age"] if age is not None and (lo is not None or hi is not None) else []
-    return met_all + met_any + with_age
+    return met_all + met_any + met_fast + with_age
+
+
+# la scorciatoia «impara in fretta»: un secondo gruppo «almeno una», sempre
+# questo. I due tratti stanno nella stessa sezione (grouping 10), quindi un
+# consigliere ne ha al massimo uno
+FAST_LEARNERS = ("trait:QuickLearner", "trait:Striver")
 
 
 def matches(snap, profiles, thresholds):
@@ -430,7 +443,7 @@ def org_match(o, p):
     """Le condizioni soddisfatte, o None se l'org non corrisponde al profilo.
     Senza limiti una condizione vale se l'org da' quella cosa (> 0); coi
     limiti, se il valore sta fra minimo e massimo (0 se non la da')."""
-    if not p.get("all") and not p.get("any"):
+    if not p.get("all") and not p.get("any") and not p.get("fastLearner"):
         return None
     if p.get("affordableOnly") and not o.get("affordable"):
         return None
@@ -511,8 +524,12 @@ def display_name(p, lang, thresholds=None):
         parts.append(" + ".join(name(x) for x in p["all"][:3]) + (" …" if len(p["all"]) > 3 else ""))
     if p.get("any"):
         any_ = " / ".join(name(x) for x in p["any"][:3]) + (" …" if len(p["any"]) > 3 else "")
-        parts.append("(%s)" % any_ if p.get("all") else any_)
+        parts.append("(%s)" % any_ if p.get("all") or p.get("fastLearner") else any_)
+    if p.get("fastLearner"):
+        parts.append("(%s)" % " / ".join(name(x) for x in FAST_LEARNERS))
     out = " + ".join(parts)
+    if len(parts) == 1 and p.get("fastLearner") and not p.get("all") and not p.get("any"):
+        out = out[1:-1]                 # solo la scorciatoia: senza parentesi
     if p.get("none"):
         no = texts_t("profile.without", lang) % ", ".join(name(x) for x in p["none"][:2])
         out = "%s · %s" % (out, no) if out else no
