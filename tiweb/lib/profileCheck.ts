@@ -1,7 +1,7 @@
 /* Controllo dei profili di reclutamento: modulo senza React, cosi' si prova
    anche fuori dal browser. I tipi vengono da RecruitProfiles.tsx. */
 
-import type { Profile, ProfilesData } from "@/components/RecruitProfiles";
+import type { Preset, Profile, ProfilesData } from "@/components/RecruitProfiles";
 type Option = ProfilesData["options"]["traits"][number];
 
 /* -- combinazioni impossibili ------------------------------------------------
@@ -142,4 +142,22 @@ export function typeChances(d: Profile, ix: Idx): TypeChance[] {
     }
     return { type, p, parts };
   }).sort((a, b) => b.p - a.p);
+}
+
+/* -- consiglieri predefiniti -----------------------------------------------
+   I predefiniti del gioco (Levi Newell...) hanno tratti scelti a mano e
+   possono avere combinazioni impossibili per uno generato a caso. Qui si
+   controllano tratti e missioni come per un candidato; gli attributi no. */
+
+/** I predefiniti che soddisfano il profilo (tratti e missioni). */
+export function presetMatches(d: Profile, presets: Preset[]): Preset[] {
+  const isAttr = (x: string) => x.startsWith("high:") || x.startsWith("low:");
+  const has = (pr: Preset, tok: string) => tok.startsWith("trait:")
+    ? pr.traits.includes(tok.slice(6)) : pr.missions.includes(tok.slice(8));
+  const any = d.any.filter((x) => !isAttr(x));
+  const anyKnown = any.length === d.any.length;
+  return presets.filter((pr) =>
+    d.all.filter((x) => !isAttr(x)).every((x) => has(pr, x))
+    && (!any.length || !anyKnown || any.some((x) => has(pr, x)))
+    && !d.none.filter((x) => !isAttr(x)).some((x) => has(pr, x)));
 }
