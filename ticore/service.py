@@ -418,7 +418,9 @@ class Service:
         snap = self.require()
         ctx = self._profiles()
         hits = profiles.matches(snap, ctx["profiles"], ctx["thresholds"])
-        return dict(ctx, options=profiles.options(self.lang),
+        used = {x.split(":", 1)[1] for p in ctx["profiles"]
+                for x in p["all"] + p["any"] + p["none"] if x.startswith("trait:")}
+        return dict(ctx, options=profiles.options(self.lang, used),
                     matches={str(pid): [{"id": c["id"], "name": c["name"], "met": met}
                                         for c, met in h] for pid, h in hits.items()})
 
