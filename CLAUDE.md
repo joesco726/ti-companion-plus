@@ -228,10 +228,10 @@ con `isAI == false`.
 - **Generazione delle rese** (`TIHabSiteState.SetDailyOutputValue`): per risorsa media
   del profilo (corretta per il corpo) + k salti di una larghezza (ognuno con probabilità
   `jump`, segno a caso) + uniforme nella larghezza, mai sotto minimo × U(0,8; 1,2); nobili
-  ≤ metalli/2 o /3. La ★ della scheda Estrazione (`mining.class_rank`) simula questo
-  generatore: somma delle risorse con media positiva nel 10% più alto della classe sullo
-  stesso corpo. Verificato: sui 298 siti esplorati di una partita i percentili cadono
-  uniformi (≈30 per decile).
+  ≤ metalli/2 o /3. La ★ della scheda Estrazione (`mining.above_range`) usa solo ciò
+  che il gioco mostra: somma vera delle risorse con media positiva sopra la somma dei
+  massimi della forchetta pre-sonda. Verificato su 298 siti esplorati: sono 33, quasi
+  gli stessi del 10% più alto simulando il generatore (32, 31 in comune).
 - **Bonus spaziali delle org** (`TIOrgState.description`): `spaceDevBonus` →
   Finanziamenti; `spaceflightBonus` → Programma spaziale, Capacità di lancio,
   exovelivoli; `MCBonus` → Controllo missioni. Acquisizione ostile può colpire

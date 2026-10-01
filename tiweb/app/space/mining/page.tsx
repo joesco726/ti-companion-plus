@@ -17,8 +17,9 @@ interface Site {
   prospected: boolean; probeEnRoute: boolean; reachable: boolean;
   yields: Record<ResKey, Yield>; value: number;
   occupant: (FactionRef & { mine: boolean }) | null;
-  /** corpi esplorati: percentile della somma delle risorse della classe */
-  classRank: { resources: ResKey[]; percentile: number; top: boolean } | null;
+  /** corpi esplorati: somma delle risorse della classe contro la somma dei
+   *  massimi della forchetta che il gioco mostra prima della sonda */
+  classRank: { resources: ResKey[]; total: number; shownMax: number; top: boolean } | null;
 }
 interface Priority { id: string; name: string; icon: string | null; bonus: number }
 interface Org {
@@ -62,19 +63,20 @@ const digits = (v: number) => (v < 1 ? 2 : v < 10 ? 1 : 0);
 
 /** Resa di una risorsa: vera se il corpo e' prospettato, altrimenti la
     forchetta minima–massima, che e' quello che mostra il gioco. */
-function YieldCell({ y, site, res }: { y: Yield; site: Site; res: Res }) {
+function YieldCell({ y, site, res, data }: { y: Yield; site: Site; res: Res; data: Res[] }) {
   const { t } = useSettings();
   const m = t.mining;
   if (site.prospected) {
     if (y.value < 0.005) return <span className="text-faint">—</span>;
     const r = site.classRank;
     if (!r?.top || !r.resources.includes(res.id)) return <>{nf(y.value, digits(y.value))}</>;
-    const total = r.resources.reduce((a, k) => a + site.yields[k].value, 0);
+    const names = r.resources.map((k) => data.find((x) => x.id === k)?.name ?? k).join(" + ");
     return (
-      <Tip title={`${site.profile} · ${site.name}`} width={320} content={
+      <Tip title={`${site.profile} · ${site.name}`} width={330} content={
         <>
-          <TipRow strong label={m.rankTop} value={m.rankTopValue.replace("{n}", nf(Math.max(1, Math.ceil((1 - r.percentile) * 100)), 0))} />
-          <TipRow label={m.rankSum} value={nf(total, 1)} />
+          <TipRow label={names} value={nf(r.total, 1)} strong />
+          <TipRow label={m.rankShownMax} value={nf(r.shownMax, 1)} />
+          <TipRow label={m.rankAbove} value={`+${nf((r.total / r.shownMax - 1) * 100, 0)}%`} />
           <p className="m-0 mt-1.5 text-faint">{m.rankHint}</p>
         </>
       }>
@@ -373,7 +375,7 @@ function Sites({ data, reload }: { data: Mining; reload: () => void }) {
                   <td className="py-1.5 pr-3"><WindowCell b={launch[s.body.id]} band={watch.band} boost={data.boost} /></td>
                   {data.resources.map((r) => (
                     <td key={r.id} className="py-1.5 pr-3 text-right whitespace-nowrap">
-                      <YieldCell y={s.yields[r.id]} site={s} res={r} />
+                      <YieldCell y={s.yields[r.id]} site={s} res={r} data={data.resources} />
                     </td>
                   ))}
                   <td className="py-1.5 pr-3 text-right whitespace-nowrap"><ValueCell site={s} res={data.resources} /></td>
