@@ -1,17 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useSnapshot } from "@/lib/api";
+import { useApi, useSnapshot } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
 import { AttrIcon, Empty, MissionIcon, Panel, ResourceIcon, Tag } from "@/components/ui";
 import { CouncilorCard, short } from "@/components/CouncilorCard";
 import { MissionFinder } from "@/components/MissionFinder";
 import { Tip } from "@/components/Tip";
+import { OrgProfiles, type OrgProfilesData } from "@/components/OrgProfiles";
 import type { Councilor } from "@/lib/types";
 
 export default function CouncilPage() {
   const { t, game, live } = useSettings();
   const { data: snap, error } = useSnapshot(live.version, game);
+  const orgProfiles = useApi<OrgProfilesData>(`/api/orgprofiles?lang=${game}`, [live.version]);
 
   if (error) return <Empty>{t.common.error}: {error}</Empty>;
   if (!snap) return <Empty>{t.common.loading}</Empty>;
@@ -148,12 +150,23 @@ export default function CouncilPage() {
       </Panel>
 
       <Panel title={t.council.market}>
+        {orgProfiles.data && <OrgProfiles data={orgProfiles.data} onChange={orgProfiles.reload} />}
         <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
           {snap.orgMarket.map((o) => {
+            // i profili delle org a cui corrisponde
+            const matched = (orgProfiles.data?.profiles ?? []).filter((pr) =>
+              (orgProfiles.data?.matches[String(pr.id)] ?? []).some((h) => h.id === o.id));
             const bits: string[] = [];
             for (const [k, v] of Object.entries(o.income)) if (v) bits.push(`${v > 0 ? "+" : ""}${v} ${k}`);
             for (const [k, v] of Object.entries(o.attributes)) if (v) bits.push(`+${v} ${short(k)}`);
             if (o.projectSlots) bits.push(`+${o.projectSlots} slot`);
+            // priorita', spazio ed estrazione, ricerca: coi nomi delle opzioni dei profili
+            const opt = orgProfiles.data?.options;
+            const nameOf = (xs: { id: string; name: string | null }[] | undefined, id: string) =>
+              xs?.find((x) => x.id === id)?.name
+              ?? (id === "miningBonus" ? t.orgProfiles.mining : id === "spaceflightBonus" ? t.orgProfiles.spaceflight : id);
+            for (const [k, v] of Object.entries(o.bonuses ?? {})) if (v) bits.push(`+${Math.round(v * 1000) / 10}% ${nameOf(opt?.priorities, k)}`);
+            for (const [k, v] of Object.entries(o.techBonuses ?? {})) if (v) bits.push(`+${Math.round(v * 1000) / 10}% ${nameOf(opt?.science, k)}`);
             const cost = Object.entries(o.cost).filter(([, v]) => v)
               .map(([k, v]) => `${v} ${k}`).join(" + ");
             return (
@@ -161,9 +174,12 @@ export default function CouncilPage() {
                 className={`bg-panel border rounded-lg p-3 ${o.affordable ? "border-good/40" : "border-edge"}`}>
                 <div className="flex justify-between items-baseline gap-2">
                   <span className="font-semibold text-[13.5px]">{o.name}</span>
-                  <Tag tone={o.affordable ? "mine" : "dim"}>
-                    {o.affordable ? t.council.affordable : t.council.notAffordable}
-                  </Tag>
+                  <span className="flex flex-wrap gap-1 justify-end">
+                    {matched.map((pr) => <Tag key={pr.id} tone="mine">{pr.name}</Tag>)}
+                    <Tag tone={o.affordable ? "mine" : "dim"}>
+                      {o.affordable ? t.council.affordable : t.council.notAffordable}
+                    </Tag>
+                  </span>
                 </div>
                 <div className="text-[12px] text-dim mt-1">
                   {cost || "—"}

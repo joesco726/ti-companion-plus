@@ -20,8 +20,8 @@ import { impossible, indexOf, presetMatches, RARE_PCT, typeChances } from "@/lib
 /** 0,4% / 3% / 25%: un decimale solo sotto l'1% */
 const fmtPct = (p: number) => { const v = p * 100; return `${v < 1 ? v.toFixed(1) : Math.round(v)}%`; };
 
-type Severity = "warning" | "info";
-type ListKey = "all" | "any" | "none";
+export type Severity = "warning" | "info";
+export type ListKey = "all" | "any" | "none";
 
 export interface Profile {
   id?: number;
@@ -81,10 +81,10 @@ function useLabel(data: ProfilesData) {
   };
 }
 
-type State = "off" | ListKey;
-const NEXT: Record<State, State> = { off: "all", all: "any", any: "none", none: "off" };
-const MARK: Record<State, string> = { off: "", all: "✓ ", any: "◇ ", none: "✕ " };
-const TONE: Record<State, string> = {
+export type State = "off" | ListKey;
+export const NEXT: Record<State, State> = { off: "all", all: "any", any: "none", none: "off" };
+export const MARK: Record<State, string> = { off: "", all: "✓ ", any: "◇ ", none: "✕ " };
+export const TONE: Record<State, string> = {
   off: "border-edge text-dim hover:text-ink hover:border-edge-lit",
   all: "border-good text-good bg-good/10",
   // azzurro fisso, non l'accent: quello segue il colore della fazione

@@ -29,6 +29,9 @@ THRESHOLDS = {"high": 6, "low": 2}
 SEVERITIES = ("warning", "info")
 KINDS = ("trait", "mission", "high", "low")
 _TOKEN = re.compile(r"^(trait|mission|high|low):([A-Za-z0-9_]+)$")
+# profili delle org: attributo, priorita'/spazio, ricerca, rendita, missione
+_ORG_TOKEN = re.compile(r"^(attr|prio|sci|inc|mission):([A-Za-z0-9_]+)$")
+ORG_INCOME = ("money", "influence", "ops", "research", "boost", "missionControl", "projects")
 
 
 def is_augment(data_name):
@@ -117,10 +120,13 @@ def normalize(p, thresholds=None):
     """Il profilo come lo salviamo: campi noti, condizioni valide, niente doppioni."""
     p = p if isinstance(p, dict) else {}
 
+    org = p.get("kind") == "org"
+    rx = _ORG_TOKEN if org else _TOKEN
+
     def tokens(key):
         out = []
         for x in p.get(key) or []:
-            if isinstance(x, str) and _TOKEN.match(x) and x not in out:
+            if isinstance(x, str) and rx.match(x) and x not in out:
                 out.append(x)
         return out
 
@@ -133,6 +139,17 @@ def normalize(p, thresholds=None):
         "any": tokens("any"),
         "none": tokens("none"),
         "newMissionsOnly": bool(p.get("newMissionsOnly")),
+    } if not org else {
+        "kind": "org",
+        "name": str(p.get("name") or "").strip()[:80],
+        "enabled": p.get("enabled") is not False,
+        "severity": sev if sev in SEVERITIES else "warning",
+        "all": tokens("all"),
+        "any": tokens("any"),
+        "none": tokens("none"),
+        # come l'allerta generica: org che posso pagare e che qualcuno puo' tenere
+        "affordableOnly": p.get("affordableOnly") is not False,
+        "holdableOnly": p.get("holdableOnly") is not False,
     }
 
 
@@ -262,3 +279,101 @@ def matches(snap, profiles, thresholds):
         if hits:
             out[p["id"]] = hits
     return out
+
+
+# -- profili delle org ------------------------------------------------------
+# Le stesse liste dei candidati, su cio' che l'org da': attributi, bonus alle
+# priorita' nazionali e allo spazio (estrazione compresa), ricerca per
+# categoria, rendite, missioni. Una condizione vale se il valore e' > 0.
+
+def org_options(lang):
+    """Cosa si puo' scegliere per le org, coi nomi del gioco dove ci sono."""
+    from .council import ORG_BONUS_FIELDS
+    prio = []
+    for field, key in ORG_BONUS_FIELDS.items():
+        # estrazione e programmi spaziali non hanno una priorita' col loro nome:
+        # l'etichetta la mette l'interfaccia
+        prio.append({"id": field, "name": gamedata.priority_name(lang, key) if key else None,
+                     "icon": gamedata.PRIORITIES.get(key, (None, None))[1] if key else None})
+    cats = sorted({b["category"] for o in gamedata.templates()["orgs"].values()
+                   for b in o.get("techBonuses") or [] if b.get("category")})
+    sci = [{"id": c, "name": gamedata.strings(lang).get("UI.Science.Category.%s" % c, c)} for c in cats]
+    inc = [{"id": k, "name": gamedata.resource_name(lang, {
+        "money": "Money", "influence": "Influence", "ops": "Operations", "research": "Research",
+        "boost": "Boost", "missionControl": "MissionControl", "projects": "Projects"}[k])}
+        for k in ORG_INCOME]
+    missions = sorted(({"id": m, "name": gamedata.mission_name(lang, m),
+                        "attribute": gamedata.mission_attribute(m)}
+                       for m in gamedata.player_missions()), key=lambda x: x["name"].lower())
+    attrs = [{"id": a, "name": gamedata.resource_name(lang, a)} for a in ATTRS]
+    return {"attributes": attrs, "priorities": prio, "science": sci, "income": inc,
+            "missions": missions}
+
+
+def _org_value(o, token):
+    kind, ident = token.split(":", 1)
+    if kind == "attr":
+        return (o.get("attributes") or {}).get(ident) or 0
+    if kind == "prio":
+        return (o.get("bonuses") or {}).get(ident) or 0
+    if kind == "sci":
+        return (o.get("techBonuses") or {}).get(ident) or 0
+    if kind == "inc":
+        return o.get("projectSlots") or 0 if ident == "projects" else (o.get("income") or {}).get(ident) or 0
+    return 1 if ident in (o.get("missionsGranted") or []) else 0
+
+
+def org_match(o, p):
+    """Le condizioni soddisfatte, o None se l'org non corrisponde al profilo."""
+    if not p.get("all") and not p.get("any"):
+        return None
+    if p.get("affordableOnly") and not o.get("affordable"):
+        return None
+    if p.get("holdableOnly") and not o.get("eligible"):
+        return None
+    has = lambda x: _org_value(o, x) > 0
+    if not all(has(x) for x in p["all"]):
+        return None
+    met_any = [x for x in p["any"] if has(x)]
+    if p["any"] and not met_any:
+        return None
+    if any(has(x) for x in p["none"]):
+        return None
+    return list(p["all"]) + met_any
+
+
+def org_matches(snap, profiles):
+    """{id profilo: [(org, condizioni soddisfatte)]}, solo profili attivi."""
+    out = {}
+    for p in profiles:
+        if not p.get("enabled"):
+            continue
+        hits = [(o, m) for o in (snap or {}).get("orgMarket") or []
+                if (m := org_match(o, p)) is not None]
+        if hits:
+            out[p["id"]] = hits
+    return out
+
+
+def org_label(token, lang, o=None):
+    """Nome leggibile di una condizione, col valore dell'org se c'e'."""
+    kind, ident = token.split(":", 1)
+    opts = org_options(lang)
+    if kind == "mission":
+        return gamedata.mission_name(lang, ident)
+    pool = {"attr": opts["attributes"], "prio": opts["priorities"], "sci": opts["science"],
+            "inc": opts["income"]}[kind]
+    name = next((x["name"] for x in pool if x["id"] == ident), None) or {
+        "miningBonus": texts_t("org.mining", lang), "spaceflightBonus": texts_t("org.spaceflight", lang),
+    }.get(ident, ident)
+    if o is None:
+        return name
+    v = _org_value(o, token)
+    if kind in ("prio", "sci"):
+        return "%s +%g%%" % (name, round(v * 100, 1))
+    return "%s %+g" % (name, v)
+
+
+def texts_t(key, lang):
+    from .texts import t
+    return t(key, lang)
