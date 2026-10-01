@@ -12,6 +12,13 @@ type Option = ProfilesData["options"]["traits"][number];
    cerca almeno un tipo con cui tutto torna. Gli attributi non si controllano.
    I consiglieri predefiniti del gioco possono fare eccezione. */
 
+/** la scorciatoia «impara in fretta» (profiles.FAST_LEARNERS): oltre al resto,
+ *  uno dei due. Stessa sezione del gioco, quindi mai tutti e due insieme: le
+ *  varianti «con Quick Learner» e «con Striver» si escludono e si sommano. */
+export const FAST_LEARNERS = ["trait:QuickLearner", "trait:Striver"];
+const variants = (d: Profile): Profile[] =>
+  FAST_LEARNERS.map((x) => ({ ...d, all: [...d.all, x], fastLearner: false }));
+
 export type Idx = { traits: Map<string, Option>; missions: Map<string, Option>; types: string[] };
 
 export function indexOf(data: ProfilesData): Idx {
@@ -60,6 +67,10 @@ const fits = (req: string[], none: string[], ix: Idx) => ix.types.some((ty) => f
 /** null se il profilo puo' corrispondere a un consigliere generato a caso;
  *  altrimenti le condizioni che non stanno insieme (le piu' poche trovate). */
 export function impossible(d: Profile, ix: Idx): { tokens: string[]; anyPart: boolean } | null {
+  if (d.fastLearner) {
+    const rs = variants(d).map((v) => impossible(v, ix));
+    return rs.some((r) => r === null) ? null : rs[0];
+  }
   const all = d.all.filter((x) => !x.startsWith("high:") && !x.startsWith("low:"));
   const any = d.any.filter((x) => !x.startsWith("high:") && !x.startsWith("low:"));
   const anyAttrOnly = d.any.length > 0 && any.length < d.any.length;  // un attributo non si controlla
@@ -80,6 +91,10 @@ export function impossible(d: Profile, ix: Idx): { tokens: string[]; anyPart: bo
 
 /** I tipi di consigliere che possono corrispondere al profilo. */
 export function possibleTypes(d: Profile, ix: Idx): string[] {
+  if (d.fastLearner) {
+    const ok = new Set(variants(d).flatMap((v) => possibleTypes(v, ix)));
+    return ix.types.filter((ty) => ok.has(ty));
+  }
   const all = d.all.filter((x) => !x.startsWith("high:") && !x.startsWith("low:"));
   const any = d.any.filter((x) => !x.startsWith("high:") && !x.startsWith("low:"));
   return ix.types.filter((ty) => fitsType(ty, all, d.none, ix)
@@ -123,6 +138,20 @@ export interface TypeChance { type: string; p: number; parts: [string, number][]
 /** Per ogni tipo possibile, la probabilita' stimata della combinazione, dalla
  *  piu' alta. null se non si puo' stimare (solo attributi). */
 export function typeChances(d: Profile, ix: Idx): TypeChance[] {
+  if (d.fastLearner) {
+    // il resto del profilo per tipo, poi la probabilita' di uno dei due
+    const rest = { ...d, fastLearner: false };
+    const onlyFast = !d.all.length && !d.any.length;
+    const base = new Map(typeChances(rest, ix).map((c) => [c.type, c]));
+    const allReq = d.all.filter((x) => !x.startsWith("high:") && !x.startsWith("low:"));
+    return possibleTypes(d, ix).map((type) => {
+      const f = FAST_LEARNERS.filter((x) => fitsType(type, [...allReq, x], d.none, ix))
+        .reduce((a, x) => a + pct(ix.traits.get(x.slice(6)), type), 0);
+      const b = base.get(type);
+      const p = (b ? b.p : onlyFast ? 1 : 0) * Math.min(1, f);
+      return { type, p, parts: [...(b?.parts ?? []), ["fast", Math.min(1, f)] as [string, number]] };
+    }).filter((c) => c.p > 0).sort((a, b) => b.p - a.p);
+  }
   const strip = (xs: string[]) => xs.filter((x) => !x.startsWith("high:") && !x.startsWith("low:"));
   const all = strip(d.all), any = strip(d.any);
   const anyKnown = !(d.any.length > 0 && any.length < d.any.length);
@@ -157,7 +186,8 @@ export function presetMatches(d: Profile, presets: Preset[]): Preset[] {
   const any = d.any.filter((x) => !isAttr(x));
   const anyKnown = any.length === d.any.length;
   return presets.filter((pr) =>
-    d.all.filter((x) => !isAttr(x)).every((x) => has(pr, x))
+    (!d.fastLearner || FAST_LEARNERS.some((x) => has(pr, x)))
+    && d.all.filter((x) => !isAttr(x)).every((x) => has(pr, x))
     && (!any.length || !anyKnown || any.some((x) => has(pr, x)))
     && !d.none.filter((x) => !isAttr(x)).some((x) => has(pr, x)));
 }
