@@ -1,0 +1,79 @@
+TI COMPANION PLUS - UPDATE AND START
+====================================
+
+Type each command in Command Prompt and press Enter after each one.
+The app lives in   C:\Users\John\ti-companion-plus
+The game data in   C:\ti-gamedata
+
+
+1. AFTER MERGING A PULL REQUEST ON GITHUB: GET THE NEW VERSION
+--------------------------------------------------------------
+First stop the app if it's running: press Ctrl+C in its window and close
+any windows it opened.
+
+    cd C:\Users\John\ti-companion-plus
+    git pull
+
+Only if the update changed the app's dependencies (the pull request will say
+so, or the start fails with "module not found" / "cannot find module"):
+
+    pip install -e .
+    cd tiweb
+    npm install
+    cd ..
+
+
+2. START THE APP
+----------------
+    cd C:\Users\John\ti-companion-plus
+    powershell -ExecutionPolicy Bypass -File start.ps1
+
+The browser opens http://localhost:3033 by itself. The first start after an
+update can take up to a minute: if the page says "unable to connect", wait
+and press F5.
+
+
+3. STOP THE APP
+---------------
+Press Ctrl+C in the window where you ran start.ps1, then close the two
+minimized windows it opened.
+
+
+4. IF START.PS1 FAILS: RUN THE TWO PARTS SEPARATELY
+----------------------------------------------------
+Window 1 (the API):
+
+    cd C:\Users\John\ti-companion-plus
+    python -m uvicorn tiserver.main:app --port 8733
+
+Window 2 (the interface):
+
+    cd C:\Users\John\ti-companion-plus\tiweb
+    npm run dev
+
+Wait for "Ready" in window 2, then open http://localhost:3033
+Any error in either window: copy the last 20 lines to Claude.
+
+
+5. AFTER A GAME UPDATE, OR WHEN CLAUDE ASKS: REFRESH THE GAME DATA
+------------------------------------------------------------------
+Not needed to use the app on this PC (it reads the game directly). It
+refreshes the private copy Claude uses for testing.
+
+    cd C:\Users\John\ti-companion-plus
+    python -m ticore.bundle C:\ti-gamedata\gamedata
+    cd C:\ti-gamedata
+    git add .
+    git commit -m "Re-extract"
+    git push
+
+To also give Claude newer saves, copy a few .gz files from
+Documents\My Games\TerraInvicta\Saves into C:\ti-gamedata\saves before
+"git add .".
+
+
+WHERE YOUR OWN DATA IS
+----------------------
+History, notes, goals and recruit profiles:
+    C:\Users\John\.ti-companion-plus\companion.db
+Updating the app never touches this file.
