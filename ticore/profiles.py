@@ -108,7 +108,9 @@ def options(lang, used=()):
                "group": tpl["traits"][k].get("grouping")}
               for k in tpl["traits"]
               if k in used or (k != "dummy" and not is_augment(k) and spawnable(k))]
-    missions = [{"id": m, "name": gamedata.mission_name(lang, m)}
+    # `attribute`: su cosa tira la missione (None per Advise, Proteggi...)
+    missions = [{"id": m, "name": gamedata.mission_name(lang, m),
+                 "attribute": gamedata.mission_attribute(m)}
                 for m in gamedata.player_missions()]
     attrs = [{"id": a, "name": gamedata.resource_name(lang, a)} for a in ATTRS]
     by_name = lambda xs: sorted(xs, key=lambda x: x["name"].lower())
