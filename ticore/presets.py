@@ -43,7 +43,7 @@ from .texts import t
 
 TEMPLATE = "TIPriorityPresetTemplate.json"
 LOC_KEY = "TIPriorityPresetTemplate.displayName."
-ARCHIVE = "terrainvicta-companion-preset.zip"   # il download dal browser
+ARCHIVE = "ti-companion-plus-preset.zip"   # il download dal browser
 BAK = ".ti-companion.bak"
 PREFIX = "TIC_"                 # marca le voci nostre: mai toccare le altre
 USER_PREFIX = PREFIX + "U_"     # ...e fra le nostre, quelle create dall'utente

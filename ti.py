@@ -14,7 +14,7 @@ Per l'interfaccia completa: `python ti.py serve` (API) + `npm run dev` in tiweb/
     python ti.py targets     punti di controllo liberi
     python ti.py projects    progetti, costi e tempi
     python ti.py diff        confronto con lo snapshot precedente
-    python ti.py serve       API FastAPI su :8732 (serve a tiweb)
+    python ti.py serve       API FastAPI su :8733 (serve a tiweb)
 """
 
 import argparse
@@ -290,7 +290,7 @@ def main():
     ap.add_argument("--eu", action="store_true", help="solo Europa (comando plan)")
     ap.add_argument("--limit", type=int, default=25)
     ap.add_argument("--councilor", help="consigliere da usare (comando plan)")
-    ap.add_argument("--port", type=int, default=8732)
+    ap.add_argument("--port", type=int, default=8733)
     ap.add_argument("--list-saves", action="store_true")
     args = ap.parse_args()
 

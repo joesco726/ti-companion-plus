@@ -314,7 +314,7 @@ class Service:
         return dict(res, status=self.presets_status(lang))
 
     def preset_create(self, name, weights, lang=None, install=False):
-        """Nuovo preset personale, in ~/.terrainvicta-companion/presets.json.
+        """Nuovo preset personale, in ~/.ti-companion-plus/presets.json.
         Con `install` lo scrive anche nel template del gioco."""
         try:
             entry = presets.save_user(name, weights)

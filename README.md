@@ -1,15 +1,15 @@
-# Terra Invicta Companion
+# TI Companion Plus
 
-**🌐 <https://terrainvicta-companion.b4p3p.it/>** · [demo](https://terrainvicta-companion.b4p3p.it/?demo=1) · [support the project](#support)
+A spinoff of [Terra Invicta Companion](https://github.com/b4p3p/terrainvicta-companion)
+by b4p3p, with extra features. The original companion is their work; this project builds
+on it separately.
 
 A second-screen companion for [Terra Invicta](https://store.steampowered.com/app/1176470/Terra_Invicta/).
 It reads your save files and puts side by side what the game spreads across a dozen
 screens: your council and what it can do, which missions you can run and where, nations,
 rival factions, space, technologies, and what changed since the previous save.
 
-**Use it online:** <https://terrainvicta-companion.b4p3p.it/> — runs entirely in your
-browser, nothing to install. **Try the demo** without the game:
-<https://terrainvicta-companion.b4p3p.it/?demo=1>
+There is no hosted site yet: run it locally (see below).
 
 ![Overview: alerts, monthly flows and the research race](docs/screenshots/overview.png)
 
@@ -58,7 +58,7 @@ to it.
 
 ### In the browser (recommended)
 
-Open the site in **Chrome or Edge** on the PC where Terra Invicta is installed and pick
+Open the interface in **Chrome or Edge** on the PC where Terra Invicta is installed and pick
 the `My Games` or `TerraInvicta` folder inside Documents: it finds the saves and reloads
 on every save. The whole Python core runs in the page through
 [Pyodide](https://pyodide.org/) (the first visit downloads about 13 MB). Saves are never
@@ -69,8 +69,8 @@ uploaded, and the tool never writes to them. The demo works in any browser.
 Requirements: Terra Invicta installed, Python 3.10+, Node.js 20+.
 
 ```bash
-git clone https://github.com/b4p3p/terrainvicta-companion.git
-cd terrainvicta-companion
+git clone https://github.com/joesco726/ti-companion-plus.git
+cd ti-companion-plus
 pip install -e .
 cd tiweb && npm install && cd ..
 ```
@@ -78,7 +78,7 @@ cd tiweb && npm install && cd ..
 On Windows, both services plus the browser:
 
 ```powershell
-.\start.ps1                  # API on :8732, interface on :3000
+.\start.ps1                  # API on :8733, interface on :3033
 .\start.ps1 -NoBrowser
 .\start.ps1 -NoReload        # no API auto-reload on source changes
 ```
@@ -86,12 +86,12 @@ On Windows, both services plus the browser:
 Or separately:
 
 ```bash
-python -m uvicorn tiserver.main:app --port 8732
+python -m uvicorn tiserver.main:app --port 8733
 cd tiweb && npm run dev
 ```
 
-Then open <http://localhost:3000>. The local API watches the save folder and pushes
-changes over SSE; history is kept in SQLite in `~/.terrainvicta-companion/`.
+Then open <http://localhost:3033>. The local API watches the save folder and pushes
+changes over SSE; history is kept in SQLite in `~/.ti-companion-plus/`.
 
 ## CLI
 
@@ -172,21 +172,8 @@ without any web framework; `tiserver` and the browser worker
 
 Any request, bug report or suggestion is welcome: something the game shows that you'd
 like side by side, a number that doesn't match what you see in game, a screen that's
-confusing. [Open an issue](https://github.com/b4p3p/terrainvicta-companion/issues) and
+confusing. [Open an issue](https://github.com/joesco726/ti-companion-plus/issues) and
 I'll take a look.
-
-## Support
-
-The companion is free and will stay free: no ads, no accounts, no tracking. But a
-space station and a base on the Moon don't come cheap these days, and neither does the
-coffee that keeps this thing running. If it saved you a few trips between screens:
-
-[☕ A coffee (3 €)](https://paypal.me/b4p3p/3EUR) ·
-[🍕 A pizza (10 €)](https://paypal.me/b4p3p/10EUR) ·
-[🚀 Fund a project (any amount)](https://paypal.me/b4p3p)
-
-PayPal opens with the amount already filled in; you can change it. No alien project will
-be funded by mistake.
 
 ## License
 

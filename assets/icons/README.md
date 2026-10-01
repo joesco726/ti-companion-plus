@@ -54,7 +54,7 @@ identification, in a non-commercial fan tool.
 
 ```python
 from tiserver import icons
-icons.extract("councilor_missions", force=True)   # -> ~/.terrainvicta-companion/icons/
+icons.extract("councilor_missions", force=True)   # -> ~/.ti-companion-plus/icons/
 icons.extract("icons_2d", force=True)
 ```
 

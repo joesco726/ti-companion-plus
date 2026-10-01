@@ -1,6 +1,6 @@
 """API del companion: legge i salvataggi, valuta le allerte, spinge via SSE.
 
-    uvicorn tiserver.main:app --port 8732 --reload
+    uvicorn tiserver.main:app --port 8733 --reload
 
 La logica delle rotte sta in `ticore/service.py`, che gira identica anche nel
 worker del browser: qui restano solo quello che vuole un server vero — il
@@ -31,7 +31,7 @@ from . import icons                             # noqa: E402
 app = FastAPI(title="TerraInvictaCompanion", version="1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["http://localhost:3033", "http://127.0.0.1:3033"],
     allow_methods=["*"], allow_headers=["*"],
 )
 

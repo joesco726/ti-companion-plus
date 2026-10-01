@@ -34,8 +34,8 @@ l'evento non arriva e dal secondo reload in poi non succede più nulla.
 Oppure separatamente:
 
 ```bash
-python -m watchfiles --filter python --sigint-timeout 2 --sigkill-timeout 1 "python -m uvicorn tiserver.main:app --host 127.0.0.1 --port 8732 --timeout-graceful-shutdown 2" ticore tiserver
-cd tiweb && npm run dev                            # interfaccia su :3000
+python -m watchfiles --filter python --sigint-timeout 2 --sigkill-timeout 1 "python -m uvicorn tiserver.main:app --host 127.0.0.1 --port 8733 --timeout-graceful-shutdown 2" ticore tiserver
+cd tiweb && npm run dev                            # interfaccia su :3033
 ```
 
 ## Architettura
@@ -66,7 +66,7 @@ ti.py       CLI sottile sopra ticore (utile senza browser).
 | `space.py` | scheda Spazio: habitat visibili (intel >= `intelToSeeSpaceAssetLocationandComposition`, 0,1: stessa regola della finestra Habitat), orbite terrestri coi posti, moduli sbloccati. Controllo missioni = ultima voce giornaliera delle `Transactions` |
 | `mining.py` | scheda Estrazione: tutti i siti con la resa **vera solo sui corpi prospettati** (intel sul corpo >= 1,0), altrove la stima del gioco (`GetHabSiteExpectedProductivity_month`) con forchetta; raggiungibilità da `effectToExplore`. «Valore» = resa × prezzo di mercato, euristica nostra. Org spaziali: nostre, del mercato, altrui entro l'intel (bersagli di Acquisizione ostile) |
 | `techs.py` | scheda Tecnologie: le tecnologie avviabili e cosa sblocca ognuna per la tua fazione (UniqueProjectUnlocks/ShouldHide del gioco). Percentuale = `GetProjectUnlockChance` come nella schermata Ricerca; i mesi di comparsa sono una stima nostra dalle regole dei trigger |
-| `store.py` | SQLite in `~/.terrainvicta-companion/`: storico, note, obiettivi. La campagna è identificata da **fazione + difficoltà + `realWorldCampaignStart`** |
+| `store.py` | SQLite in `~/.ti-companion-plus/`: storico, note, obiettivi. La campagna è identificata da **fazione + difficoltà + `realWorldCampaignStart`** |
 
 ### API
 `/api/snapshot?lang=` · `/api/alerts` · `/api/missions` · `/api/missions/{id}/plan`
@@ -101,7 +101,7 @@ Due livelli separati:
   arte di Pavonis Interactive e la MIT non le copre (vedi `LICENSE` e
   `assets/icons/README.md`). `tiserver/icons.py` serve prima quelle, e solo se manca
   qualcosa ricade sull'estrazione con UnityPy dall'installazione dell'utente verso
-  `~/.terrainvicta-companion/icons/`. UnityPy resta opzionale (`pip install -e .[icons]`).
+  `~/.ti-companion-plus/icons/`. UnityPy resta opzionale (`pip install -e .[icons]`).
 
 Struttura: `gamestates["PavonisInteractive.TerraInvicta.TIXxxState"]` è una lista di
 `{"Key":{"value":id},"Value":{…}}`. La fazione del giocatore si trova da `TIPlayerState`

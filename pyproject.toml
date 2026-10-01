@@ -3,14 +3,14 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "terrainvicta-companion"
+name = "ti-companion-plus"
 version = "0.1.0"
-description = "Second-screen companion for Terra Invicta: reads your save file and shows council, missions and nations while you play."
+description = "TI Companion Plus, a spinoff of b4p3p's Terra Invicta Companion: a second-screen companion for Terra Invicta that reads your save file and shows council, missions and nations while you play."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{ name = "b4p3p" }]
+authors = [{ name = "joesco726" }, { name = "b4p3p" }]
 keywords = ["terra-invicta", "gaming", "companion", "savegame", "fastapi"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -32,8 +32,8 @@ dependencies = [
 icons = ["UnityPy>=1.20", "Pillow>=10"]
 
 [project.urls]
-Homepage = "https://github.com/b4p3p/terrainvicta-companion"
-Issues = "https://github.com/b4p3p/terrainvicta-companion/issues"
+Homepage = "https://github.com/joesco726/ti-companion-plus"
+Issues = "https://github.com/joesco726/ti-companion-plus/issues"
 
 [project.scripts]
 ti = "ti:main"

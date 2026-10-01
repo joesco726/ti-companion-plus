@@ -7,7 +7,7 @@ Interactive, fuori dalla licenza MIT del progetto: vedi `LICENSE` e
 Se un'icona manca da li' (versione nuova del gioco, file rimosso su richiesta
 dell'avente diritto) si ricade sull'estrazione dal bundle Unity
 `StreamingAssets/AssetBundles/councilor_missions` della copia del gioco
-dell'utente, verso `~/.terrainvicta-companion/icons/`. Quel passaggio richiede
+dell'utente, verso `~/.ti-companion-plus/icons/`. Quel passaggio richiede
 UnityPy, che e' opzionale: senza, `mission_icon_file()` torna None e
 l'interfaccia resta testuale.
 """

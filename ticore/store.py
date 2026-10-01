@@ -1,6 +1,6 @@
 """Persistenza: storico degli snapshot, note e obiettivi.
 
-SQLite in ~/.terrainvicta-companion/companion.db. Gli snapshot sono indicizzati
+SQLite in ~/.ti-companion-plus/companion.db. Gli snapshot sono indicizzati
 per (campagna, data di gioco): rigiocare lo stesso giorno sovrascrive, cosi'
 ricaricare un salvataggio non sporca lo storico.
 """
