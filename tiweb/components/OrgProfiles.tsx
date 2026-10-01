@@ -60,7 +60,7 @@ export function rangeText(r?: { min?: number; max?: number }, pct = false) {
 }
 
 /** Nome di una condizione `tipo:id`: dal gioco, o dall'interfaccia per
- *  estrazione e programmi spaziali, che nel gioco non hanno un nome di priorita'. */
+ *  l'estrazione, che nel gioco non ha un nome di priorita'. */
 function useOrgLabel(data: OrgProfilesData) {
   const { t } = useSettings();
   const p = t.orgProfiles;
@@ -68,7 +68,7 @@ function useOrgLabel(data: OrgProfilesData) {
     attr: data.options.attributes, prio: data.options.priorities, sci: data.options.science,
     inc: data.options.income, mission: data.options.missions,
   };
-  const fallback: Record<string, string> = { miningBonus: p.mining, spaceflightBonus: p.spaceflight };
+  const fallback: Record<string, string> = { miningBonus: p.mining };
   return (token: string) => {
     const [kind, id] = token.split(":");
     const name = pools[kind]?.find((o) => o.id === id)?.name ?? fallback[id] ?? id;
@@ -121,7 +121,7 @@ function Grid({ d, setD, data }: {
       <div className="flex flex-col items-start gap-1">{items}</div>
     </div>
   );
-  const fallback: Record<string, string> = { miningBonus: p.mining, spaceflightBonus: p.spaceflight };
+  const fallback: Record<string, string> = { miningBonus: p.mining };
   const count = (kinds: string[]) => [...d.all, ...d.any, ...d.none]
     .filter((x) => kinds.includes(x.split(":")[0])).length;
   const nb = count(["attr", "prio", "sci", "inc"]), nm = count(["mission"]);

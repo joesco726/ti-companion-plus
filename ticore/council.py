@@ -40,7 +40,9 @@ ORG_BONUS_FIELDS = {
     "economyBonus": "economy", "welfareBonus": "welfare", "environmentBonus": "environment",
     "knowledgeBonus": "knowledge", "governmentBonus": "government", "unityBonus": "unity",
     "oppressionBonus": "oppression", "militaryBonus": "military", "spoilsBonus": "spoils",
-    "spaceDevBonus": "spaceProgram", "spaceflightBonus": None, "MCBonus": "missionControl",
+    # spaceflightBonus vale anche per Found Space Program e STO (ticore/mining.py):
+    # il gioco lo chiama col nome della priorita' Launch Facilities, «Boost»
+    "spaceDevBonus": "spaceProgram", "spaceflightBonus": "boost", "MCBonus": "missionControl",
     "miningBonus": None,
 }
 
@@ -80,7 +82,7 @@ def org_view(g, o, lang="ita"):
         # i nomi da mostrare accanto alle icone, dalla localizzazione del gioco
         # (estrazione e programmi spaziali non hanno una priorita' col loro nome)
         "bonusNames": {f: (gamedata.priority_name(lang, ORG_BONUS_FIELDS[f]) if ORG_BONUS_FIELDS[f]
-                           else texts.t("org.mining" if f == "miningBonus" else "org.spaceflight", lang))
+                           else texts.t("org.mining", lang))
                        for f in ORG_BONUS_FIELDS if o.get(f)},
         "techNames": {b["category"]: gamedata.strings(lang).get(
                           "UI.Science.Category.%s" % b["category"], b["category"])

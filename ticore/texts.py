@@ -79,7 +79,6 @@ TEXTS = {
                                 "en": "Tier %s. Meets: %s. Can hold it: %s."},
     "profile.age": {"it": "età %s", "en": "age %s"},
     "org.mining": {"it": "Estrazione", "en": "Mining"},
-    "org.spaceflight": {"it": "Programmi spaziali", "en": "Spaceflight"},
     "alert.recruit.title": {"it": "Candidato per «%s»: %s",
                             "en": "Recruit matches «%s»: %s"},
     "alert.recruit.detail": {"it": "%s, %s. Soddisfa: %s.",

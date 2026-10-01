@@ -384,8 +384,8 @@ def org_options(lang):
     from .council import ORG_BONUS_FIELDS
     prio = []
     for field, key in ORG_BONUS_FIELDS.items():
-        # estrazione e programmi spaziali non hanno una priorita' col loro nome:
-        # l'etichetta la mette l'interfaccia
+        # l'estrazione non ha una priorita' col suo nome: l'etichetta la mette
+        # l'interfaccia
         prio.append({"id": field, "name": gamedata.priority_name(lang, key) if key else None,
                      "icon": gamedata.PRIORITIES.get(key, (None, None))[1] if key else None})
     cats = sorted({b["category"] for o in gamedata.templates()["orgs"].values()
@@ -475,7 +475,7 @@ def org_label(token, lang, o=None):
     pool = {"attr": opts["attributes"], "prio": opts["priorities"], "sci": opts["science"],
             "inc": opts["income"]}[kind]
     name = next((x["name"] for x in pool if x["id"] == ident), None) or {
-        "miningBonus": texts_t("org.mining", lang), "spaceflightBonus": texts_t("org.spaceflight", lang),
+        "miningBonus": texts_t("org.mining", lang),
     }.get(ident, ident)
     if o is None:
         return name
