@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from functools import lru_cache
 
-from . import council, gamedata, mining, texts
+from . import council, fleets, gamedata, mining, texts
 from .names import Namer, bare, nation_id
 
 # Il filtro «Europa» delle nazioni. Scritto coi nomi italiani del gioco per
@@ -702,6 +702,10 @@ def snapshot(g, lang="ita"):
         "launch": mining.launch_bodies(g, lang),
         # rete delle miniere: attive contro quelle che non costano controllo missioni
         "mines": mining.mine_network(g),
+        # flotte aliene con portaerei d'assalto in viaggio verso la Terra
+        "carriers": fleets.incoming_carriers(
+            g, gamedata.templates().get("utilityModules"),
+            fleets._dt(next(iter(g.state("TITimeState").values()), {}).get("currentDateTime"))),
         # la serie e' dal piu' recente (vedi _chrono): conta solo oggi. Con
         # any() l'allerta restava accesa per 32 giorni dopo essere rientrati
         "cpCapOverage": bool((g.me.get("history_CPCapOverageByDay") or [0])[0]),

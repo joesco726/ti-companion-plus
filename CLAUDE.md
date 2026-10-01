@@ -236,6 +236,12 @@ con `isAI == false`.
   con `mine`, completato, alimentato) contro `spaceMineFreebies` (assente dal JSON: 0) +
   effetti `MCFreeSpaceMineNetwork`. Oltre, controllo missioni in più = eccedenza²/2. Il
   gioco lo mostra solo nel suggerimento del controllo missioni; verificato 17/24 a schermo.
+- **Portaerei d'assalto aliene** (`fleets.py`, IL di `TISpaceFleetState.
+  GlobalCheckNotifyFleetLaunch`): il gioco stesso notifica, al lancio, una flotta aliena
+  visibile (intel ≥ 0,1, posizione e composizione) con un modulo `LandArmy` (Alien Army
+  Pod) diretta alla Terra o a un'orbita terrestre, con la data d'arrivo. L'allerta critica
+  resta accesa sotto i 150 giorni all'arrivo. Nel salvataggio le date della traiettoria
+  sono spesso `{"$ref": id}` (riferimenti di Json.NET): vanno risolte.
 - **Bonus spaziali delle org** (`TIOrgState.description`): `spaceDevBonus` →
   Finanziamenti; `spaceflightBonus` → Programma spaziale, Capacità di lancio,
   exovelivoli; `MCBonus` → Controllo missioni. Acquisizione ostile può colpire
