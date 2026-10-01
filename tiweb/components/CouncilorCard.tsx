@@ -5,6 +5,7 @@ import { useSettings } from "@/lib/settings";
 import { currentDict, type Dict } from "@/lib/i18n";
 import { AttrIcon, MissionIcon, ResourceIcon, Tag, nf } from "@/components/ui";
 import { ATTRS, type Attr, type Councilor, type Income, type TraitEffect } from "@/lib/types";
+import { OrgBonuses } from "@/components/OrgBonuses";
 
 /* La scheda di un consigliere, uguale nel Consiglio e nel Reclutamento: le
    due pagine passano solo quello che le distingue (variante, azione in alto,
@@ -298,18 +299,13 @@ export function CouncilorCard({ c, variant, action, sortAttr, highlighted, onMis
           <Section title={t.council.orgs}>
             {c.orgs.length === 0
               ? <div className="text-dim">{t.council.noOrgs}</div>
-              : c.orgs.map((o) => {
-                const bits: string[] = [];
-                for (const [k, v] of Object.entries(o.attributes)) if (v) bits.push(`+${v} ${short(k)}`);
-                if (o.projectSlots) bits.push(`+${o.projectSlots} slot`);
-                return (
-                  <div key={o.id} className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-ink">{o.name}</span>
-                    <IncomeLine income={{ ...o.income, fromTraits: false } as Income} />
-                    {bits.length > 0 && <span className="text-dim">{bits.join(", ")}</span>}
-                  </div>
-                );
-              })}
+              : c.orgs.map((o) => (
+                // stesse icone del mercato delle org (components/OrgBonuses.tsx)
+                <div key={o.id} className="flex items-center gap-x-3 gap-y-0.5 flex-wrap">
+                  <span className="text-ink">{o.name}</span>
+                  <OrgBonuses o={o} />
+                </div>
+              ))}
           </Section>
           <Section title={t.council.lastMission}>
             <span className="text-ink">{c.priorMission ?? "—"}</span>
