@@ -374,6 +374,7 @@ const it = {
       name: "Nome",
       namePlaceholder: "facoltativo",
       fastLearner: "serve anche {names}",
+      or: "o",
       sets: {
         noInspire: "non può Ispirare", loyaltyLoss: "perde lealtà",
         noInspireHint: "Esclude in un clic i tratti che vietano la missione Ispira e non si possono togliere con un aumento (Paranoico/a sì, quindi resta fuori).",
@@ -1345,6 +1346,7 @@ const en: typeof it = {
       name: "Name",
       namePlaceholder: "optional",
       fastLearner: "also needs {names}",
+      or: "or",
       sets: {
         noInspire: "can't run Inspire", loyaltyLoss: "can lose loyalty",
         noInspireHint: "Rules out in one click the traits that block the Inspire mission and can't be removed by augmentation (Paranoid can be, so it's left out).",

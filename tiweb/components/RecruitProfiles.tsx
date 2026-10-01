@@ -331,7 +331,7 @@ function Editor({ start, data, onSave, onCancel }: {
   const notMe = presets.filter((x) => !forMe.includes(x));
   const who = (xs: typeof presets) => xs.map((x) => `${x.name} (${typeName(x.type)})`).join(", ");
   const rare = chances.length > 0 && chances[0].p * 100 <= RARE_PCT ? chances[0] : null;
-  const fastNames = FAST_LEARNERS.map(label).join(" / ");
+  const fastNames = FAST_LEARNERS.map(label).join(` ${p.or} `);
   const partLabel = (tok: string) => (tok === "any" ? p.any : tok === "fast" ? fastNames : label(tok));
   return (
     <div className="border border-accent/50 bg-panel p-3 space-y-3">
@@ -478,7 +478,7 @@ export function RecruitProfiles({ data, onChange }: {
     ["all", p.all], ["any", p.any], ["none", p.none],
   ] as [ListKey, string][]).filter(([k]) => pr[k].length)
     .map(([k, title]) => `${title}: ${pr[k].map(label).join(", ")}`)
-    .concat(pr.fastLearner ? [p.fastLearner.replace("{names}", FAST_LEARNERS.map(label).join(" / "))] : [])
+    .concat(pr.fastLearner ? [p.fastLearner.replace("{names}", FAST_LEARNERS.map(label).join(` ${p.or} `))] : [])
     .join(" · ");
 
   const active = data.profiles.filter((x) => x.enabled).length;
