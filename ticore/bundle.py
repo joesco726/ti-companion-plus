@@ -149,9 +149,39 @@ def _slim(tpl):
             for k, v in tpl.items()}
 
 
+def _scenarios(out, langs, sizes):
+    """Gli scenari dei DLC installati, in scenarios/<cartella>/: i template
+    che cambiano rispetto ai dati base e i testi. Restituisce {dataName:
+    cartella}: nello stesso TIMetaTemplate stanno piu' dataName (lo scenario,
+    la sua data d'inizio, le sue nazioni...), e il salvataggio ne nomina uno."""
+    index, done = {}, set()
+    for name, src in gamedata.scenario_sources().items():
+        key = os.path.basename(os.path.dirname(src["dir"]))
+        index[name] = key
+        if key in done:
+            continue
+        done.add(key)
+        data = gamedata._scenario_from_dir(name) or {}
+        d = os.path.join(out, "scenarios", key)
+        os.makedirs(os.path.join(d, "loc"), exist_ok=True)
+        # solo cio' che lo scenario aggiunge o cambia: il resto e' gia' in templates.json
+        base = gamedata.templates()
+        tpl = {fam: {n: t for n, t in items.items() if (base.get(fam) or {}).get(n) != t}
+               for fam, items in (data.get("templates") or {}).items()}
+        sizes["scenarios/%s/templates.json" % key] = _dump(
+            os.path.join(d, "templates.json"), _slim({f: v for f, v in tpl.items() if v}))
+        for lang in langs:
+            s = {k: v for k, v in gamedata._read_scenario_strings(data.get("source"), lang).items()
+                 if keep(k)}
+            sizes["scenarios/%s/loc/%s.json" % (key, lang)] = _dump(
+                os.path.join(d, "loc", "%s.json" % lang), s)
+    return index
+
+
 def build(out):
     if not paths.template_dir() or not paths.localization_dir():
         raise SystemExit("Installazione di Terra Invicta non trovata.")
+    gamedata.use_scenario(None)         # i dati base, senza lo scenario dell'ultima partita
     gamedata.templates.cache_clear()
     gamedata.strings.cache_clear()
     os.makedirs(os.path.join(out, "loc"), exist_ok=True)
@@ -169,11 +199,14 @@ def build(out):
     sizes["presets-template.json"] = _dump(os.path.join(out, "presets-template.json"),
                                            presets.game_original() or [])
 
+    scenarios = _scenarios(out, langs, sizes)
+
     manifest = {
         "gameVersion": game_version(),
         "steamBuild": steam_build(),
         "languages": {l: gamedata.LANGUAGES[l] for l in langs},
         "files": sizes,
+        "scenarios": scenarios,
     }
     _dump(os.path.join(out, "manifest.json"), manifest)
     return manifest
@@ -190,6 +223,11 @@ def load(src):
         with open(os.path.join(src, "loc", "%s.json" % lang), encoding="utf-8") as f:
             strings[lang] = json.load(f)
     gamedata.use_bundle(tpl, strings, list(manifest["languages"]))
+    if manifest.get("scenarios"):
+        def scenario_file(key, name):
+            with open(os.path.join(src, "scenarios", key, name), encoding="utf-8") as f:
+                return json.load(f)
+        gamedata.use_bundle_scenarios(manifest["scenarios"], scenario_file)
     p = os.path.join(src, "presets-template.json")
     if os.path.isfile(p):
         with open(p, encoding="utf-8") as f:
