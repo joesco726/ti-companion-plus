@@ -7,6 +7,17 @@ import { GAME_LOCALES } from "@/lib/i18n";
 import { Bars, Empty, MissionIcon, Panel, ResourceIcon, Tag, nf, gameAgo } from "@/components/ui";
 import type { Alert, Snapshot } from "@/lib/types";
 
+/** Siti alieni mostrati nella panoramica: solo quelli scoperti negli ultimi
+ *  ALIEN_RECENT_DAYS giorni di gioco; dei piu' vecchi si dice solo quanti sono. */
+const ALIEN_RECENT_DAYS = 365;
+
+function recentAlienSites(snap: Snapshot) {
+  const now = Date.parse(snap.dateKey);
+  const recent = snap.alienSites.filter((s) =>
+    !(now - Date.parse(s.sinceKey) > ALIEN_RECENT_DAYS * 86_400_000));
+  return { recent, older: snap.alienSites.length - recent.length };
+}
+
 const TONE = {
   critical: { border: "border-bad", text: "text-bad" },
   warning: { border: "border-warn", text: "text-warn" },
@@ -55,6 +66,7 @@ export default function Overview() {
   if (!snap) return <Empty>{t.common.loading}</Empty>;
 
   const net = snap.flows.net;
+  const aliens = recentAlienSites(snap);
   const active = snap.projects.items.filter((p) => p.active);
   const cps = Object.entries(snap.controlPoints.byNation).sort((a, b) => b[1] - a[1]);
   const cap = snap.controlPoints.capacity;
@@ -144,10 +156,10 @@ export default function Overview() {
             )}
           </Panel>
 
-          {snap.alienSites.length > 0 && (
+          {aliens.recent.length > 0 && (
             <Panel title={t.overview.alienSites}>
               <div className="flex flex-col gap-1.5 text-[12.5px]">
-                {snap.alienSites.map((s) => (
+                {aliens.recent.map((s) => (
                   <div key={s.region} className="flex justify-between items-baseline gap-3">
                     <span>{s.region}</span>
                     <span className="flex items-baseline gap-2">
@@ -158,6 +170,11 @@ export default function Overview() {
                     </span>
                   </div>
                 ))}
+                {aliens.older > 0 && (
+                  <p className="text-faint text-[11.5px] m-0">
+                    {t.overview.alienSitesOlder.replace("{n}", String(aliens.older))}
+                  </p>
+                )}
               </div>
             </Panel>
           )}
