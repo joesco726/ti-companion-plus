@@ -17,6 +17,8 @@ interface Site {
   prospected: boolean; probeEnRoute: boolean; reachable: boolean;
   yields: Record<ResKey, Yield>; value: number;
   occupant: (FactionRef & { mine: boolean }) | null;
+  /** corpi esplorati: percentile della somma delle risorse della classe */
+  classRank: { resources: ResKey[]; percentile: number; top: boolean } | null;
 }
 interface Priority { id: string; name: string; icon: string | null; bonus: number }
 interface Org {
@@ -60,7 +62,21 @@ function YieldCell({ y, site, res }: { y: Yield; site: Site; res: Res }) {
   const { t } = useSettings();
   const m = t.mining;
   if (site.prospected) {
-    return y.value < 0.005 ? <span className="text-faint">—</span> : <>{nf(y.value, digits(y.value))}</>;
+    if (y.value < 0.005) return <span className="text-faint">—</span>;
+    const r = site.classRank;
+    if (!r?.top || !r.resources.includes(res.id)) return <>{nf(y.value, digits(y.value))}</>;
+    const total = r.resources.reduce((a, k) => a + site.yields[k].value, 0);
+    return (
+      <Tip title={`${site.profile} · ${site.name}`} width={320} content={
+        <>
+          <TipRow strong label={m.rankTop} value={m.rankTopValue.replace("{n}", nf(Math.max(1, Math.ceil((1 - r.percentile) * 100)), 0))} />
+          <TipRow label={m.rankSum} value={nf(total, 1)} />
+          <p className="m-0 mt-1.5 text-faint">{m.rankHint}</p>
+        </>
+      }>
+        <span>{nf(y.value, digits(y.value))}<span className="text-amber-300 ml-0.5">★</span></span>
+      </Tip>
+    );
   }
   const lo = y.min ?? 0, hi = y.max ?? 0;
   if (hi < 0.005) return <span className="text-faint">—</span>;

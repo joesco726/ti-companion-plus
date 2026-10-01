@@ -225,6 +225,13 @@ con `isAI == false`.
   modulo dalla Terra = massa × e^(Δv/EV) × 0,1, con Δv di Hohmann da LEO + atterraggio
   (latitudine del sito dal salvataggio) ed EV = 2,11 alzato dai razzi
   (`GenericTransferEV_kps`). Niente finestra per la Terra e le sue lune.
+- **Generazione delle rese** (`TIHabSiteState.SetDailyOutputValue`): per risorsa media
+  del profilo (corretta per il corpo) + k salti di una larghezza (ognuno con probabilità
+  `jump`, segno a caso) + uniforme nella larghezza, mai sotto minimo × U(0,8; 1,2); nobili
+  ≤ metalli/2 o /3. La ★ della scheda Estrazione (`mining.class_rank`) simula questo
+  generatore: somma delle risorse con media positiva nel 10% più alto della classe sullo
+  stesso corpo. Verificato: sui 298 siti esplorati di una partita i percentili cadono
+  uniformi (≈30 per decile).
 - **Bonus spaziali delle org** (`TIOrgState.description`): `spaceDevBonus` →
   Finanziamenti; `spaceflightBonus` → Programma spaziale, Capacità di lancio,
   exovelivoli; `MCBonus` → Controllo missioni. Acquisizione ostile può colpire
