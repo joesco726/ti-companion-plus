@@ -8,7 +8,7 @@ import { OrgBonuses, OrgCost } from "@/components/OrgBonuses";
 import { CouncilorCard } from "@/components/CouncilorCard";
 import { MissionFinder } from "@/components/MissionFinder";
 import { Tip } from "@/components/Tip";
-import { OrgProfiles, type OrgProfilesData } from "@/components/OrgProfiles";
+import { OrgProfiles, stars, type OrgProfilesData } from "@/components/OrgProfiles";
 import type { Councilor } from "@/lib/types";
 
 export default function CouncilPage() {
@@ -164,7 +164,12 @@ export default function CouncilPage() {
               <div key={o.id}
                 className={`bg-panel border rounded-lg p-3 ${o.affordable ? "border-good/40" : "border-edge"}`}>
                 <div className="flex justify-between items-baseline gap-2">
-                  <span className="font-semibold text-[13.5px]">{o.name}</span>
+                  <span className="font-semibold text-[13.5px]">
+                    {o.name}
+                    {/* dimensione dell'org, in stelle come nel gioco */}
+                    {o.tier ? <span className="text-warn font-normal ml-1.5 text-[12px]" title={`${t.orgProfiles.size} ${o.tier}`}>
+                      {stars(o.tier)}</span> : null}
+                  </span>
                   <span className="flex flex-wrap gap-1 justify-end">
                     {matched.map((pr) => <Tag key={pr.id} tone="mine">{pr.name}</Tag>)}
                     <Tag tone={o.affordable ? "mine" : "dim"}>
