@@ -1,5 +1,29 @@
 # TerraInvictaCompanion
 
+## This repository: TI Companion Plus
+
+joesco726's spinoff of b4p3p's Terra Invicta Companion
+(<https://github.com/b4p3p/terrainvicta-companion>). The owner does not speak Italian:
+**answer in English** and use the game's English terms (Persuasion, Investigation,
+Espionage, Command, Administration, Science, Security, Loyalty). This overrides
+"rispondere in italiano" below; everything else in this file still applies. Explain
+Italian code, comments and commit messages in English when they come up.
+
+Two kinds of change, never mixed in one branch or commit:
+
+- **Spinoff-only** (name, links, ports 8733/3033, data folder `~/.ti-companion-plus/`,
+  About page, this section): stays in this repository, written in English.
+- **Features** that b4p3p might merge one day: branch from `upstream/main`, not from our
+  `main`, and write them in his style: Italian comments and commit messages, the project
+  rules below. Then merge the branch into our `main`. Remotes are not stored in the
+  repository, so in a new session add his first:
+  `git remote add upstream https://github.com/b4p3p/terrainvicta-companion`.
+
+Before building a feature, an issue on his repository asks whether he wants it (his
+`ROADMAP.md` is private). To offer a finished one, push the same branch to a fork of his
+repository used only for pull requests, never for spinoff changes. Bring his updates
+in with `git fetch upstream` and a merge of `upstream/main` into our `main`.
+
 Companion di partita per **Terra Invicta**, pensato per restare aperto su un secondo
 monitor mentre si gioca. L'utente gioca in **italiano**: rispondere in italiano e usare
 i nomi italiani del gioco (Persuasione, Indagine, Spionaggio, Comando, Amministrazione,
