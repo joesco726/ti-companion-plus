@@ -45,6 +45,11 @@ class Game:
 
         meta = self.state("TIMetadataState")
         self.meta = next(iter(meta.values()), {})
+        # scenario dei DLC (es. BrokenEarthScenario): i suoi template e testi
+        # valgono per questa partita
+        self.scenario = self.meta.get("scenarioDataname") or None
+        from . import gamedata
+        gamedata.use_scenario(self.scenario)
         self.nations = self.state("TINationState")
         self.regions = self.state("TIRegionState")
         self.councilors = self.state("TICouncilorState")

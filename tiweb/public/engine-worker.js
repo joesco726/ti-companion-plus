@@ -114,6 +114,7 @@ async function init(lang) {
   for (const l of langs) loc[l] = await fetchText(`/gamedata/loc/${l}.json`);
   py.globals.set("LOC", py.toPy(loc));
   py.globals.set("LANGS", py.toPy(Object.keys(manifest.languages)));
+  py.globals.set("SCENARIOS", JSON.stringify(manifest.scenarios ?? {}));
   langs.forEach((l) => loadedLangs.add(l));
 
   // presets.py cerca i preset distribuiti in <repo>/assets/presets: nel
@@ -140,7 +141,10 @@ presets.use_bundled_template(json.loads(PRESETS))
 # XHR sincrono, permesso nei worker
 from pyodide.http import open_url
 gamedata.set_loader(lambda l: json.loads(open_url("/gamedata/loc/%s.json" % l).read()))
-del TPL, LOC, LANGS, PRESETS
+# scenari dei DLC (Broken Earth...): si scaricano solo se il salvataggio ne usa uno
+gamedata.use_bundle_scenarios(json.loads(SCENARIOS),
+    lambda k, f: json.loads(open_url("/gamedata/scenarios/%s/%s" % (k, f)).read()))
+del TPL, LOC, LANGS, PRESETS, SCENARIOS
 `);
   service = py.runPython(`s = Service(); s.lang = ${JSON.stringify(lang)}
 s.data_version = json.loads(${JSON.stringify(JSON.stringify({

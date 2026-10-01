@@ -53,7 +53,7 @@ ti.py       CLI sottile sopra ticore (utile senza browser).
 |---|---|
 | `paths.py` | individua salvataggi, template, localizzazione, cartella dati |
 | `save.py` | `Game`: carica il .gz e indicizza i gamestate. Gestisce il file **bloccato** mentre il gioco salva (retry + fallback al precedente) |
-| `gamedata.py` | template JSON + localizzazione ufficiale in **14 lingue** |
+| `gamedata.py` | template JSON + localizzazione ufficiale in **14 lingue**, con sopra quelli dello **scenario dei DLC** della partita (`use_scenario`, chiamato da `save.Game`) |
 | `council.py` | consiglieri, org, copertura attributi, **missioni mancanti** |
 | `missions.py` | fattori reali di una missione e bersagli ordinati |
 | `model.py` | `snapshot()`: il payload completo |
@@ -61,7 +61,7 @@ ti.py       CLI sottile sopra ticore (utile senza browser).
 | `presets.py` | preset di priorità: lettura, preset personali, scrittura nel template del gioco **senza mod** (gli achievement restano) |
 | `service.py` | le rotte `/api/*` senza framework: `Service` (snapshot, precedente, allerte) + `dispatch()`. La usano sia `tiserver` sia il worker del browser (`tiweb/public/engine-worker.js`): **una rotta nuova si aggiunge qui e in `_ROUTES`**, poi l'involucro FastAPI |
 | `portable.py` | export (zip con `companion.db` + `presets.json`) e import che **unisce**: accetta anche il `companion.db` dell'API locale. Nel browser è l'unico modo di non perdere lo storico |
-| `bundle.py` | estratto dei dati del gioco per la versione web (template + chiavi di localizzazione usate), in `tiweb/public/gamedata/`, gitignorato: sono dati di Pavonis. Chi aggiunge un `loc()` su una famiglia nuova la mette in `KEEP_PREFIXES`; `python -m ticore.bundle --check` confronta l'output dell'API coi file del gioco e con l'estratto |
+| `bundle.py` | estratto dei dati del gioco per la versione web (template + chiavi di localizzazione usate), in `tiweb/public/gamedata/`, gitignorato: sono dati di Pavonis. Gli scenari dei DLC vanno in `scenarios/<cartella>/` (solo i template che cambiano, più i testi), elencati in `manifest.scenarios`. Chi aggiunge un `loc()` su una famiglia nuova la mette in `KEEP_PREFIXES`; `python -m ticore.bundle --check` confronta l'output dell'API coi file del gioco e con l'estratto |
 | `factions.py` | confronto fra fazioni, coi soli campi che l'intel sblocca: soglie e misure di `TIGlobalConfig`/`FactionView`. `councilors()`: i consiglieri altrui con le regole di `CouncilorView` (0,10 posizione senza nome, 0,25 identità, 0,50 attributi veri, 0,75 missione, nascosta in fase missioni); sotto 0,50 gli attributi sono la stima del gioco dal tipo |
 | `space.py` | scheda Spazio: habitat visibili (intel >= `intelToSeeSpaceAssetLocationandComposition`, 0,1: stessa regola della finestra Habitat), orbite terrestri coi posti, moduli sbloccati. Controllo missioni = ultima voce giornaliera delle `Transactions` |
 | `mining.py` | scheda Estrazione: tutti i siti con la resa **vera solo sui corpi prospettati** (intel sul corpo >= 1,0), altrove la stima del gioco (`GetHabSiteExpectedProductivity_month`) con forchetta; raggiungibilità da `effectToExplore`. «Valore» = resa × prezzo di mercato, euristica nostra. Org spaziali: nostre, del mercato, altrui entro l'intel (bersagli di Acquisizione ostile) |
@@ -159,6 +159,15 @@ con `isAI == false`.
   `controlPointMaintenanceFreebies` (125, in `TIGlobalValuesState`) + PER+CMD+AMM dei
   consiglieri (org comprese) + effetti `ControlPointMaintenance` + moduli degli habitat.
   Non è il conteggio dei punti: `model.cp_capacity()`.
+- **Scenari dei DLC** (Broken Earth e 2003 di Dark Skies): il salvataggio li nomina in
+  `TIMetadataState.scenarioDataname`. Template in
+  `DLC_Content/<DLC>/<scenario>/Templates/` (alcuni con commenti `//`), testi in
+  `DLC_Content/<DLC>/Localization/<lingua>/<friendlyName del TIMetaTemplate>/`, con le
+  chiavi col suffisso `scenarioLocalizationPostfix` («….Al-Qaida.BrokenEarth» = Peshawar
+  Command). Per dataName sostituiscono quelli base. Broken Earth: `CPMaintenanceModifier`
+  0,7 in `TIStartTimeTemplate` (moltiplica il costo dei punti) ed effetti
+  `Effect_BSBE_*` sul tetto. Un `.gz` di un'altra partita può essere di un altro
+  scenario: aprirlo cambia i dati per tutti, `Service` rimette quello della partita.
 - **Nome di un preset in partita**: il gioco **ignora `friendlyName`** e legge
   `TIPriorityPresetTemplate.displayName.<dataName>` da
   `Localization/<lingua>/TIPriorityPresetTemplate.<lingua>`. Senza quella riga
