@@ -5,7 +5,7 @@ import { useSettings } from "@/lib/settings";
 import { currentDict, type Dict } from "@/lib/i18n";
 import { AttrIcon, MissionIcon, ResourceIcon, Tag, nf } from "@/components/ui";
 import { ATTRS, type Attr, type Councilor, type Income, type TraitEffect } from "@/lib/types";
-import { OrgBonuses } from "@/components/OrgBonuses";
+import { OrgTable } from "@/components/OrgBonuses";
 
 /* La scheda di un consigliere, uguale nel Consiglio e nel Reclutamento: le
    due pagine passano solo quello che le distingue (variante, azione in alto,
@@ -299,13 +299,8 @@ export function CouncilorCard({ c, variant, action, sortAttr, highlighted, onMis
           <Section title={t.council.orgs}>
             {c.orgs.length === 0
               ? <div className="text-dim">{t.council.noOrgs}</div>
-              : c.orgs.map((o) => (
-                // stesse icone del mercato delle org (components/OrgBonuses.tsx)
-                <div key={o.id} className="flex items-center gap-x-3 gap-y-0.5 flex-wrap">
-                  <span className="text-ink">{o.name}</span>
-                  <OrgBonuses o={o} />
-                </div>
-              ))}
+              // stesse icone e colonne del mercato delle org (components/OrgBonuses.tsx)
+              : <OrgTable orgs={c.orgs} />}
           </Section>
           <Section title={t.council.lastMission}>
             <span className="text-ink">{c.priorMission ?? "—"}</span>
