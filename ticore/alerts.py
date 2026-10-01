@@ -5,7 +5,7 @@ piu' allerte con severita' 'critical' | 'warning' | 'info' e un id stabile,
 cosi' il frontend puo' non ripetere una notifica gia' mostrata.
 """
 
-from . import gamedata, profiles as recruit_profiles
+from . import gamedata, profiles as recruit_profiles, watch as body_watch_rules
 from .texts import t
 
 SEVERITY_ORDER = {"critical": 0, "warning": 1, "info": 2}
@@ -294,10 +294,31 @@ def org_watch(cur, profiles):
     return out
 
 
+def body_watch(cur, profiles):
+    """Corpi sorvegliati della scheda Estrazione nella banda della finestra
+    di lancio, con un sito libero (e la spinta, se richiesta): watch.py."""
+    lang = _lang(cur)
+    out = []
+    for row, info in body_watch_rules.matches(cur, (profiles or {}).get("bodyWatch")):
+        w = row["window"]
+        detail = t("alert.launch.detail", lang, round(w["penalty"] * 100),
+                   t("alert.launch.after" if w["rising"] else "alert.launch.before", lang),
+                   w["date"], row["free"], row["sites"])
+        if info["boost"]:
+            detail += t("alert.launch.boost", lang, round(info["cost"], 1), round(info["have"], 1))
+        if not row.get("reachable", True):
+            detail += t("alert.launch.unreachable", lang)
+        out.append(_alert("launch:%s" % row["id"], "info",
+                          t("alert.launch.title", lang, row["name"]), detail,
+                          tab="space", body=row["id"]))
+    return out
+
+
 def evaluate(cur, prev=None, profiles=None):
     out = []
     rules = [(r, (cur, prev)) for r in RULES] + [(recruit_watch, (cur, profiles)),
-                                                  (org_watch, (cur, profiles))]
+                                                  (org_watch, (cur, profiles)),
+                                                  (body_watch, (cur, profiles))]
     for rule, args in rules:
         try:
             out.extend(rule(*args) or [])

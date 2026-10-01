@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useApi } from "@/lib/api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { api, useApi } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
 import { Empty, Panel, ResourceIcon, Stat, Tag, nf, pct } from "@/components/ui";
 import { Guide } from "@/components/Guide";
@@ -28,7 +28,16 @@ interface Org {
   where: "mine" | "market" | "rival";
   owner: (Partial<FactionRef> & { councilor?: string }) | null;
 }
+interface LaunchWindow { penalty: number; rising: boolean; date: string; synodicDays: number }
+interface LaunchBody {
+  id: string; name: string; sites: number; free: number; reachable: boolean;
+  window: LaunchWindow | null; outpostBoost?: number | null;
+}
+interface Watch { band: [number, number]; bodies: Record<string, { boost: boolean }> }
 interface Mining {
+  launch: LaunchBody[];
+  watch: Watch;
+  boost: number;
   resources: Res[];
   sites: Site[];
   prospectedBodies: number;
@@ -38,9 +47,9 @@ interface Mining {
   thresholds: { prospected: number; councilor: number; faction: number };
 }
 
-type SortKey = "site" | "body" | "au" | "value" | "status" | "occupied" | ResKey;
+type SortKey = "site" | "body" | "au" | "window" | "value" | "status" | "occupied" | ResKey;
 // testo in ordine alfabetico, numeri dal piu' grande
-const ASC_FIRST: SortKey[] = ["site", "body", "au", "occupied"];
+const ASC_FIRST: SortKey[] = ["site", "body", "au", "window", "occupied"];
 const LIMIT = 40;
 
 const digits = (v: number) => (v < 1 ? 2 : v < 10 ? 1 : 0);
@@ -125,7 +134,102 @@ function Th({ k, sort, asc, onSort, right, last, hint, children }: {
   );
 }
 
-function Sites({ data }: { data: Mining }) {
+/** Penalita' col segno sulla linea del tempo: negativa prima della finestra
+ *  (il gioco: freccia verde), positiva dopo (freccia rossa). Come watch.py. */
+const position = (w: LaunchWindow) => (w.rising ? 1 : -1) * w.penalty * 100;
+const inBand = (w: LaunchWindow | null, band: [number, number]) =>
+  !!w && position(w) >= band[0] - 1e-6 && position(w) <= band[1] + 1e-6;
+
+/** La finestra di lancio dalla Terra, come la mostra il gioco: percentuale e freccia. */
+function WindowCell({ b, band, boost }: { b: LaunchBody | undefined; band: [number, number]; boost: number }) {
+  const { t } = useSettings();
+  const m = t.mining;
+  if (!b?.window) return <span className="text-faint">—</span>;
+  const w = b.window;
+  return (
+    <Tip title={`${b.name} · ${m.window}`} width={300} content={
+      <>
+        <TipRow strong label={m.windowPenalty} value={`${nf(w.penalty * 100, 0)}%`} />
+        <TipRow label={m.windowNext} value={w.date} />
+        <TipRow label={m.windowSynodic} value={`${nf(w.synodicDays, 0)} ${m.windowDays}`} />
+        {b.outpostBoost != null && (
+          <TipRow label={m.outpostBoost} value={<span className={boost >= b.outpostBoost ? "text-good" : "text-bad"}>
+            {nf(b.outpostBoost, 1)} / {nf(boost, 1)}</span>} />
+        )}
+        <p className="m-0 mt-1.5 text-faint">{w.rising ? m.windowRising : m.windowFalling}</p>
+        {b.outpostBoost != null && <p className="m-0 mt-1.5 text-faint">{m.outpostBoostHint}</p>}
+      </>
+    }>
+      <span className={`whitespace-nowrap tabular-nums ${inBand(w, band) ? "text-sky-300" : ""}`}>
+        {nf(w.penalty * 100, 0)}%{" "}
+        <span className={w.rising ? "text-bad" : "text-good"}>{w.rising ? "↑" : "↓"}</span>
+      </span>
+    </Tip>
+  );
+}
+
+/** Campanella del corpo: spenta → avvisa → avvisa anche per la spinta → spenta. */
+function WatchButton({ b, watch, onSet }: {
+  b: LaunchBody | undefined; watch: Watch; onSet: (id: string, v: { boost: boolean } | null) => void;
+}) {
+  const { t } = useSettings();
+  const m = t.mining;
+  if (!b?.window) return null;
+  const cur = watch.bodies[b.id];
+  const next = !cur ? { boost: false } : !cur.boost ? { boost: true } : null;
+  const label = !cur ? m.watchOff : cur.boost ? m.watchBoost : m.watchOn;
+  return (
+    <Tip title={`${b.name} · ${label}`} width={300} content={
+      <>
+        <p className="m-0">{m.watchHint}</p>
+        <p className="m-0 mt-1.5 text-faint">{m.watchCycle}</p>
+      </>
+    }>
+      <button type="button" onClick={() => onSet(b.id, next)} aria-label={label}
+        className={`ml-1.5 text-[12px] leading-none ${cur ? "text-sky-300" : "text-faint opacity-50 hover:opacity-100"}`}>
+        {cur ? "🔔" : "🔕"}{cur?.boost ? "🚀" : ""}
+      </button>
+    </Tip>
+  );
+}
+
+/** Banda della finestra: due cursori da −50% (finestra lontana, in arrivo) a
+ *  +50% (lontana, passata). Lo zero e' la finestra. */
+function WindowBand({ band, setBand }: { band: [number, number]; setBand: (b: [number, number]) => void }) {
+  const { t } = useSettings();
+  const m = t.mining;
+  const L = -50, R = 50;
+  const [lo, hi] = band;
+  const pos = (v: number) => `${((v - L) / (R - L)) * 100}%`;
+  const thumb = "absolute inset-0 w-full appearance-none bg-transparent pointer-events-none "
+    + "[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none "
+    + "[&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full "
+    + "[&::-webkit-slider-thumb]:bg-sky-300 [&::-webkit-slider-thumb]:cursor-pointer "
+    + "[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5 "
+    + "[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-sky-300 [&::-moz-range-thumb]:border-0";
+  const fmt = (v: number) => `${v > 0 ? "+" : ""}${v}%`;
+  return (
+    <Tip title={m.bandTitle} width={340} content={<><p className="m-0">{m.bandHint}</p></>}>
+      <span className="flex items-center gap-2 text-[12px]">
+        <span className="text-dim">{m.band}</span>
+        <span className="text-faint text-[11px]">{m.bandBefore}</span>
+        <span className="relative w-48 h-4 flex items-center">
+          <span className="absolute inset-x-0 h-1.5 rounded bg-edge-lit" />
+          <span className="absolute h-1.5 rounded bg-sky-300" style={{ left: pos(lo), width: `calc(${pos(hi)} - ${pos(lo)})` }} />
+          <span className="absolute w-px h-3 bg-ink/60" style={{ left: pos(0) }} />
+          <input type="range" min={L} max={R} value={lo} aria-label={m.bandFrom}
+            onChange={(e) => setBand([Math.min(Number(e.target.value), hi), hi])} className={thumb} />
+          <input type="range" min={L} max={R} value={hi} aria-label={m.bandTo}
+            onChange={(e) => setBand([lo, Math.max(Number(e.target.value), lo)])} className={thumb} />
+        </span>
+        <span className="text-faint text-[11px]">{m.bandAfter}</span>
+        <span className="tabular-nums text-sky-300 whitespace-nowrap">{fmt(lo)} … {fmt(hi)}</span>
+      </span>
+    </Tip>
+  );
+}
+
+function Sites({ data, reload }: { data: Mining; reload: () => void }) {
   const { t } = useSettings();
   const m = t.mining;
   const [sort, setSort] = useState<SortKey>("value");
@@ -138,6 +242,28 @@ function Sites({ data }: { data: Mining }) {
   const [reachable, setReachable] = useState(true);
   const [hideOccupied, setHideOccupied] = useState(false);
   const [all, setAll] = useState(false);
+  const { game, refreshAlerts } = useSettings();
+  const launch = useMemo(() => Object.fromEntries(data.launch.map((b) => [b.id, b])), [data.launch]);
+
+  // corpi sorvegliati e banda: si salvano interi (PUT /api/mining/watch). La
+  // banda aspetta che il cursore si fermi, per non scrivere a ogni pixel.
+  const [watch, setWatch] = useState<Watch>(data.watch);
+  useEffect(() => setWatch(data.watch), [data.watch]);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveWatch = (w: Watch, delay = 0) => {
+    setWatch(w);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      void api(`/api/mining/watch?lang=${game}`, { method: "PUT", body: JSON.stringify(w) })
+        .then(() => { refreshAlerts(); reload(); });
+    }, delay);
+  };
+  const setBody = (id: string, v: { boost: boolean } | null) => {
+    const bodies = { ...watch.bodies };
+    if (v) bodies[id] = v; else delete bodies[id];
+    saveWatch({ ...watch, bodies });
+  };
+  const watched = data.launch.filter((b) => watch.bodies[b.id]);
 
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -150,6 +276,7 @@ function Sites({ data }: { data: Mining }) {
         case "site": return s.name;
         case "body": return s.body.name;
         case "au": return s.body.au ?? Infinity;
+        case "window": { const w = launch[s.body.id]?.window; return w ? position(w) : Infinity; }
         case "value": return s.value;
         case "status": return s.prospected ? 3 : s.probeEnRoute ? 2 : s.reachable ? 1 : 0;
         case "occupied": return s.occupant?.name ?? "￿";   // i liberi in fondo
@@ -162,7 +289,7 @@ function Sites({ data }: { data: Mining }) {
       const c = typeof ka === "string" ? ka.localeCompare(kb as string) : ka - (kb as number);
       return c * dir || b.value - a.value;
     });
-  }, [data.sites, sort, asc, q, reachable, hideOccupied]);
+  }, [data.sites, sort, asc, q, reachable, hideOccupied, launch]);
   const shown = all ? rows : rows.slice(0, LIMIT);
   const th = { sort, asc, onSort: sortBy };
 
@@ -185,6 +312,14 @@ function Sites({ data }: { data: Mining }) {
           <span className="text-faint text-[11.5px] underline decoration-dotted">{m.prices}</span>
         </Tip>
       </div>
+      <div className="flex gap-x-4 gap-y-1.5 flex-wrap items-center mb-3">
+        <WindowBand band={watch.band} setBand={(b) => saveWatch({ ...watch, band: b }, 500)} />
+        <span className="text-faint text-[11.5px]">
+          {watched.length
+            ? `${m.watching}: ${watched.map((b) => b.name + (watch.bodies[b.id].boost ? " 🚀" : "")).join(", ")}`
+            : m.watchingNone}
+        </span>
+      </div>
 
       {!rows.length ? <Empty>{m.none}</Empty> : (
         <div className="overflow-x-auto">
@@ -194,6 +329,7 @@ function Sites({ data }: { data: Mining }) {
                 <Th k="site" {...th}>{m.site}</Th>
                 <Th k="body" {...th}>{m.body}</Th>
                 <Th k="au" right hint={m.auHint} {...th}>{m.au}</Th>
+                <Th k="window" hint={m.windowHint} {...th}>{m.window}</Th>
                 {data.resources.map((r) => (
                   <Th key={r.id} k={r.id} right hint={m.yieldHint} {...th}>{r.name}</Th>
                 ))}
@@ -209,8 +345,12 @@ function Sites({ data }: { data: Mining }) {
                     <div className="whitespace-nowrap">{s.name}</div>
                     <div className="text-faint text-[11px]">{s.profile}</div>
                   </td>
-                  <td className="py-1.5 pr-3 whitespace-nowrap">{s.body.name}</td>
+                  <td className="py-1.5 pr-3 whitespace-nowrap">
+                    {s.body.name}
+                    <WatchButton b={launch[s.body.id]} watch={watch} onSet={setBody} />
+                  </td>
                   <td className="py-1.5 pr-3 text-right text-faint">{s.body.au != null ? nf(s.body.au, s.body.au < 10 ? 2 : 0) : "—"}</td>
+                  <td className="py-1.5 pr-3"><WindowCell b={launch[s.body.id]} band={watch.band} boost={data.boost} /></td>
                   {data.resources.map((r) => (
                     <td key={r.id} className="py-1.5 pr-3 text-right whitespace-nowrap">
                       <YieldCell y={s.yields[r.id]} site={s} res={r} />
@@ -323,7 +463,7 @@ function Orgs({ data }: { data: Mining }) {
 
 export default function MiningPage() {
   const { t, game, live } = useSettings();
-  const { data, error } = useApi<Mining>(`/api/mining?lang=${game}`, [live.version, game]);
+  const { data, error, reload } = useApi<Mining>(`/api/mining?lang=${game}`, [live.version, game]);
   if (error) return <Empty>{error}</Empty>;
   if (!data) return <Empty>{t.common.loading}</Empty>;
   const m = t.mining;
@@ -349,7 +489,7 @@ export default function MiningPage() {
             value={`+${pct(data.orgMiningBonus, 0)}`} />
         </div>
       </Panel>
-      <Sites data={data} />
+      <Sites data={data} reload={reload} />
       <Orgs data={data} />
     </>
   );

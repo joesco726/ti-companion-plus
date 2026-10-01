@@ -15,7 +15,8 @@ import re
 from urllib.parse import unquote
 
 from . import (Game, SaveLocked, alerts, factions, gamedata, load, missions, profiles,
-               mining, model, paths, portable, presets, snapshot, space, store, techs, texts)
+               mining, model, paths, portable, presets, snapshot, space, store, techs, texts,
+               watch)
 from .texts import t
 
 
@@ -231,9 +232,24 @@ class Service:
         return space.overview(self.game, lang or self.lang)
 
     def mining(self, lang=None):
-        """Siti di estrazione e org spaziali visibili: vedi ticore/mining.py."""
+        """Siti di estrazione e org spaziali visibili: vedi ticore/mining.py.
+        Con le finestre di lancio dei corpi e quelli sorvegliati (watch.py)."""
         self.require()
-        return mining.overview(self.game, lang or self.lang)
+        lang = lang or self.lang
+        out = mining.overview(self.game, lang)
+        out["launch"] = mining.launch_bodies(self.game, lang)
+        out["watch"] = self._body_watch()
+        out["boost"] = (self.snapshot.get("resources") or {}).get("Boost") or 0
+        return out
+
+    def _body_watch(self):
+        return watch.normalize(store.get_setting(self.con, "bodyWatch"))
+
+    def body_watch_set(self, body, lang=None):
+        """Banda e corpi sorvegliati: un'unica impostazione, scritta intera."""
+        store.set_setting(self.con, "bodyWatch", watch.normalize(body))
+        self._realert()
+        return self._body_watch()
 
     def techs(self, lang=None):
         """Tecnologie avviabili e cosa sblocca ognuna: vedi ticore/techs.py."""
@@ -409,7 +425,8 @@ class Service:
         allp = store.list_profiles(self.con)
         return {"profiles": [p for p in allp if p.get("kind") != "org"],
                 "orgProfiles": [p for p in allp if p.get("kind") == "org"],
-                "thresholds": self._thresholds()}
+                "thresholds": self._thresholds(),
+                "bodyWatch": self._body_watch()}
 
     def _kind_of(self, profile_id):
         p = next((p for p in store.list_profiles(self.con) if p["id"] == profile_id), None)
@@ -593,4 +610,5 @@ _ROUTES = [
      lambda s, q, b, i: s.org_profile_update(int(i), b, q.get("lang"))),
     ("DELETE", r"/api/orgprofiles/(\d+)",
      lambda s, q, b, i: s.org_profile_delete(int(i), q.get("lang"))),
+    ("PUT", r"/api/mining/watch", lambda s, q, b: s.body_watch_set(b, q.get("lang"))),
 ]

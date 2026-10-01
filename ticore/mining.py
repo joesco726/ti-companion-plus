@@ -42,11 +42,12 @@ schermata del gioco elenca anche il pool non assegnato della fazione
 (`UI.OrgTargeting.CouncilorTip`).
 """
 
-from . import gamedata
+from . import gamedata, transfer
 from .council import org_view
 from .factions import COUNCILOR_GATES, GATES, _faction_ref, _intel_on
 from .names import Namer
 
+OUTPOST_CORE = "OutpostCore"        # il modulo con cui si fonda una base
 DAYS_PER_MONTH = 30.436874          # TIHabSiteState.GetMonthlyProduction
 INTEL_PROSPECTED = 1.0              # TIFactionState.Prospected
 INTEL_PROBE_EN_ROUTE = 0.1          # TIFactionState.ProspectorEnRoute
@@ -173,13 +174,11 @@ def _sites(g, lang, my_id, nm):
         value = sum(y[k] * (market.get(key) or 0) for k, key in RESOURCES)
 
         occupant = None
-        h = habs.get((s.get("hab") or {}).get("value"))
-        if h and h.get("exists", True) and not h.get("archived"):
-            mine = (h.get("faction") or {}).get("value") == my_id
-            hid = (h.get("ID") or {}).get("value")
-            if mine or hab_intel.get(hid, 0) + 1e-6 >= INTEL_TO_SEE_HAB:
-                f = g.factions.get((h.get("faction") or {}).get("value"))
-                occupant = dict(_faction_ref(g, nm, f), mine=mine)
+        seen = _visible_hab(g, s, my_id, hab_intel, habs)
+        if seen:
+            h, mine = seen
+            f = g.factions.get((h.get("faction") or {}).get("value"))
+            occupant = dict(_faction_ref(g, nm, f), mine=mine)
 
         out.append({
             "id": s.get("templateName"),
@@ -201,6 +200,73 @@ def _sites(g, lang, my_id, nm):
         })
     out.sort(key=lambda r: -r["value"])
     return out, market
+
+
+def _visible_hab(g, s, my_id, hab_intel, habs):
+    """L'habitat sul sito, se la fazione lo vede (intel >= 0,1 o e' suo): un
+    habitat invisibile lascia il sito libero anche nel gioco."""
+    h = habs.get((s.get("hab") or {}).get("value"))
+    if not h or not h.get("exists", True) or h.get("archived"):
+        return None
+    mine = (h.get("faction") or {}).get("value") == my_id
+    hid = (h.get("ID") or {}).get("value")
+    if mine or hab_intel.get(hid, 0) + 1e-6 >= INTEL_TO_SEE_HAB:
+        return h, mine
+    return None
+
+
+def launch_bodies(g, lang="ita"):
+    """Per ogni corpo con siti: finestra di lancio dalla Terra (transfer.py),
+    siti liberi per quel che si vede, raggiungibilita'. Va nello snapshot per
+    le allerte dei corpi sorvegliati (alerts.body_watch)."""
+    my_id = (g.me.get("ID") or {}).get("value")
+    tpl = gamedata.templates()
+    body_tpl = tpl["spaceBodies"]
+    hab_intel = _intel_on(g.me, "intel", "TIHabState")
+    habs = g.state("TIHabState")
+    bodies = g.state("TISpaceBodyState")
+    effects = _my_effects(g, my_id)
+    orbits = transfer.Orbits(g, body_tpl)
+    launcher = transfer.Launcher(g, orbits, tpl["orbits"], tpl["effects"], my_id)
+    core = tpl["habModules"].get(OUTPOST_CORE)
+    rows = {}
+    for s in g.state("TIHabSiteState").values():
+        if not s.get("exists", True) or s.get("archived"):
+            continue
+        b = bodies.get((s.get("parentBody") or {}).get("value")) or {}
+        name = b.get("templateName")
+        if not name:
+            continue
+        r = rows.get(name)
+        if r is None:
+            bt = body_tpl.get(name) or {}
+            options = [e for e in (bt.get("effectToExplore"), bt.get("alternativeEffectToExplore")) if e]
+            r = rows[name] = {
+                "id": name,
+                "name": gamedata.loc(lang, "TISpaceBodyTemplate", "displayName", name, b.get("displayName")),
+                "sites": 0, "free": 0,
+                "reachable": not options or any(e in effects for e in options),
+                "window": transfer.earth_window(g, orbits, name, my_id, tpl["effects"]),
+                "outpostBoost": None,
+            }
+        r["sites"] += 1
+        free = not _visible_hab(g, s, my_id, hab_intel, habs)
+        r["free"] += free
+        # Nucleo avamposto dalla Terra: fra i siti cambia solo la latitudine.
+        # Il piu' economico fra i liberi; se non ce ne sono, fra tutti
+        try:
+            cost = launcher.module_boost(core, name, s.get("latitude"))
+        except (ValueError, ZeroDivisionError, OverflowError):
+            cost = None
+        if cost is not None:
+            best = r.setdefault("_cost", {})
+            k = "free" if free else "all"
+            best[k] = min(best.get(k, cost), cost)
+    for r in rows.values():
+        best = r.pop("_cost", {})
+        c = best.get("free") if r["free"] else min(best.values(), default=None)
+        r["outpostBoost"] = round(c, 1) if c is not None else None
+    return sorted(rows.values(), key=lambda r: r["name"] or "")
 
 
 def _org_row(g, o, lang, where, owner=None):

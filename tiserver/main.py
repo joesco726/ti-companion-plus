@@ -434,6 +434,14 @@ def org_profile_delete(profile_id: int, lang: str = Query(None)):
         return state.org_profile_delete(profile_id, lang)
 
 
+# ---------------------------------------------------------- corpi sorvegliati
+
+@app.put("/api/mining/watch")
+def body_watch_set(body: dict = Body(...), lang: str = Query(None)):
+    with http_errors():
+        return state.body_watch_set(body, lang)
+
+
 @app.get("/api/stream")
 async def stream():
     q: asyncio.Queue = asyncio.Queue()
