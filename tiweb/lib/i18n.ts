@@ -377,7 +377,7 @@ const it = {
       sets: {
         noInspire: "non può Ispirare", loyaltyLoss: "perde lealtà",
         noInspireHint: "Esclude in un clic i tratti che vietano la missione Ispira e non si possono togliere con un aumento (Paranoico/a sì, quindi resta fuori).",
-        loyaltyLossHint: "Esclude in un clic i tratti fissi con cui il consigliere può perdere lealtà vera: un malus fisso, o una perdita dopo atrocità o fallimenti critici. Fuori Legato/a alla famiglia e i tratti che si tolgono con un aumento.",
+        loyaltyLossHint: "Esclude in un clic i tratti fissi con cui il consigliere continua a perdere lealtà vera dopo certi eventi: atrocità della fazione, fallimenti critici. Fuori i malus fissi (es. -1 lealtà), Legato/a alla famiglia e i tratti che si tolgono con un aumento.",
       },
       fastHint: "Oltre a tutte le altre condizioni, il candidato deve avere uno di questi due tratti (che non escono mai insieme). Vale come un secondo gruppo «almeno una».",
       severity: "Allerta",
@@ -1348,7 +1348,7 @@ const en: typeof it = {
       sets: {
         noInspire: "can't run Inspire", loyaltyLoss: "can lose loyalty",
         noInspireHint: "Rules out in one click the traits that block the Inspire mission and can't be removed by augmentation (Paranoid can be, so it's left out).",
-        loyaltyLossHint: "Rules out in one click the fixed traits that can cost the councilor real loyalty: a flat penalty, or a loss after atrocities or critical failures. Family Ties and traits removable by augmentation are left out.",
+        loyaltyLossHint: "Rules out in one click the fixed traits that keep costing the councilor real loyalty after certain events: faction atrocities, critical failures. Flat penalties (e.g. -1 loyalty), Family Ties and traits removable by augmentation are left out.",
       },
       fastHint: "On top of every other condition, the candidate must have one of these two traits (they never come together). It works as a second «at least one» group.",
       severity: "Alert",

@@ -246,15 +246,19 @@ def removable(t):
 
 def trait_sets():
     """{"noInspire": [...], "loyaltyLoss": [...]}: tratti fissi che vietano
-    Ispira, e tratti fissi con cui il consigliere puo' perdere lealta' vera
-    (malus fisso o regola che ne toglie dopo un evento; non la lealta'
-    apparente)."""
+    Ispira, e tratti fissi con cui il consigliere continua a poter perdere
+    lealta' vera (dopo atrocita', fallimenti critici...; non la lealta'
+    apparente, non un malus fisso)."""
     tpl = gamedata.templates()["traits"]
     ok = {k: t for k, t in tpl.items()
           if k != "dummy" and not is_augment(k) and spawnable(k) and not removable(t)}
     no_inspire = sorted(k for k, t in ok.items() if "Inspire" in (t.get("restrictedMissionNames") or []))
+    # solo perdite che continuano a scattare: dopo un evento (regola
+    # LoyaltyLoss...) o finche' vale una condizione. Un malus fisso e
+    # dichiarato (Cynic -1, Sociopath -3) non conta: lo si vede gia' al
+    # reclutamento e non peggiora
     loss = sorted(k for k, t in ok.items() if k not in _LOYALTY_EXCEPT and (
-        any(m.get("stat") == "Loyalty" and m.get("operation") == "Additive"
+        any(m.get("stat") == "Loyalty" and m.get("operation") == "Additive" and m.get("condition")
             and (gamedata._num(m.get("strValue")) or 0) < 0 for m in t.get("statMods") or [])
         or str(t.get("specialTraitRule") or "").startswith("LoyaltyLoss")))
     return {"noInspire": no_inspire, "loyaltyLoss": loss}

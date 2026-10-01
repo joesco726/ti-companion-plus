@@ -183,7 +183,9 @@ con `isAI == false`.
   toglie un tratto solo se uno dei suoi costi (`XPCost`, `moneyCost`, `influenceCost`,
   `opsCost`, `boostCost`) è negativo: Paranoid −40 XP, Corrupt −40, Insecure −20...
   I pulsanti «non può Ispirare» / «perde lealtà» dei profili (`profiles.trait_sets`)
-  escludono solo tratti fissi; Family Ties fuori su richiesta.
+  escludono solo tratti fissi; «perde lealtà» conta solo le perdite che continuano a
+  scattare (regole `LoyaltyLoss…`, modifiche condizionate), non i malus fissi; Family
+  Ties fuori su richiesta.
 - **Costo di reclutamento**: 60 influenza; 30 se il tipo ha affinità con la fazione
   (`affinities` in `TICouncilorTypeTemplate`: l'Agente sul campo con la Resistenza),
   120 se ha anti-affinità.
