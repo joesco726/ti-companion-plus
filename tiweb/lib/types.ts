@@ -236,7 +236,9 @@ export interface Snapshot {
                    mine: number; total: number;
                    /** la barra «uso/tetto» del gioco, ricalcolata dal salvataggio */
                    capacity: { used: number; cap: number; free: number; base: number;
-                               councilors: number; effects: number; habsMissing: boolean } };
+                               councilors: number; effects: number; habsMissing: boolean;
+                               /** effetti senza template fra quelli letti: uso e tetto non ne tengono conto */
+                               unknownEffects?: string[] } };
   nations: Nation[];
   council: {
     team: Councilor[];

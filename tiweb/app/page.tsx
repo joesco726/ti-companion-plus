@@ -149,6 +149,11 @@ export default function Overview() {
                   </span>
                 </div>
                 {cap.habsMissing && <p className="text-faint mt-1 mb-0">{t.overview.cpCapHabs}</p>}
+                {(cap.unknownEffects?.length ?? 0) > 0 && (
+                  <p className="text-warn text-[12px] mt-1 mb-0" title={cap.unknownEffects!.join("\n")}>
+                    ⚠ {t.overview.cpCapMod.replace("{n}", String(cap.unknownEffects!.length))}
+                  </p>
+                )}
               </div>
             )}
             {snap.cpCapOverage && (
