@@ -5,7 +5,7 @@ piu' allerte con severita' 'critical' | 'warning' | 'info' e un id stabile,
 cosi' il frontend puo' non ripetere una notifica gia' mostrata.
 """
 
-from . import gamedata
+from . import gamedata, profiles as recruit_profiles
 from .texts import t
 
 SEVERITY_ORDER = {"critical": 0, "warning": 1, "info": 2}
@@ -243,11 +243,35 @@ RULES = [stalled_projects, low_resources, control_points, low_opinion, council_w
          alien_watch, opportunities, structural]
 
 
-def evaluate(cur, prev=None):
+def recruit_watch(cur, profiles):
+    """Candidati del mercato che corrispondono a un profilo di reclutamento.
+    `profiles` = {"profiles": [...], "thresholds": {...}} dal database: non sta
+    nello snapshot, perche' e' una scelta del giocatore, non stato di partita."""
+    if not profiles:
+        return []
+    lang = _lang(cur)
+    th = profiles["thresholds"]
+    by_id = {p["id"]: p for p in profiles["profiles"]}
     out = []
-    for rule in RULES:
+    for pid, hits in recruit_profiles.matches(cur, profiles["profiles"], th).items():
+        p = by_id[pid]
+        for c, met in hits:
+            out.append(_alert(
+                "recruit:%s:%s" % (pid, c["id"]), p["severity"],
+                t("alert.recruit.title", lang, p["name"], c["name"]),
+                t("alert.recruit.detail", lang, c.get("typeName") or "?",
+                  c.get("nationality") or "?",
+                  ", ".join(recruit_profiles.label(x, lang, th, c) for x in met)),
+                tab="recruits", councilor=c["name"], profile=pid))
+    return out
+
+
+def evaluate(cur, prev=None, profiles=None):
+    out = []
+    rules = [(r, (cur, prev)) for r in RULES] + [(recruit_watch, (cur, profiles))]
+    for rule, args in rules:
         try:
-            out.extend(rule(cur, prev) or [])
+            out.extend(rule(*args) or [])
         except Exception as e:  # una regola rotta non deve spegnere le altre
             out.append(_alert("ruleerror:%s" % rule.__name__, "info",
                               t("alert.ruleerror.title", _lang(cur)),

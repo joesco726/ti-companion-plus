@@ -33,6 +33,7 @@ def summary(con):
         "campaigns": one("SELECT COUNT(DISTINCT campaign) FROM snapshots"),
         "notes": one("SELECT COUNT(*) FROM notes"),
         "goals": one("SELECT COUNT(*) FROM goals"),
+        "profiles": one("SELECT COUNT(*) FROM recruit_profiles"),
         "presets": len(presets.user()),
         "bytes": one("SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()"),
     }
@@ -55,7 +56,8 @@ def export(con):
 
 def import_bytes(con, data):
     """Unisce un export (zip), un companion.db o un presets.json. Torna i conteggi."""
-    out = {"snapshots": 0, "snapshotsNewer": 0, "notes": 0, "goals": 0, "presets": 0}
+    out = {"snapshots": 0, "snapshotsNewer": 0, "notes": 0, "goals": 0, "profiles": 0,
+           "presets": 0}
     if data[:4] == b"PK\x03\x04":
         with zipfile.ZipFile(io.BytesIO(data)) as z:
             names = set(z.namelist())
@@ -79,7 +81,9 @@ def _merge_db(con, raw):
 
     Snapshot: per (campagna, data di gioco), vince quello archiviato per ultimo.
     Note e obiettivi: aggiunti se non c'e' gia' la stessa voce (stessa
-    campagna, stesso soggetto/titolo, stesso istante di creazione).
+    campagna, stesso soggetto/titolo, stesso istante di creazione). Profili di
+    reclutamento: aggiunti se non c'e' gia' lo stesso profilo con lo stesso
+    istante di creazione.
     """
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, "import.db")
@@ -116,10 +120,19 @@ def _merge_db(con, raw):
                     "SELECT campaign,title,kind,target,amount,due,done,created FROM src.goals s "
                     "WHERE NOT EXISTS (SELECT 1 FROM goals g WHERE g.campaign=s.campaign "
                     "AND g.title=s.title AND g.created=s.created)").rowcount
+            # profili di reclutamento: stesso contenuto e stesso istante di creazione
+            profiles = 0
+            if "recruit_profiles" in have:
+                profiles = con.execute(
+                    "INSERT INTO recruit_profiles (data,created,updated) "
+                    "SELECT data,created,updated FROM src.recruit_profiles s "
+                    "WHERE NOT EXISTS (SELECT 1 FROM recruit_profiles p "
+                    "WHERE p.data=s.data AND p.created=s.created)").rowcount
             con.commit()
         finally:
             con.execute("DETACH DATABASE src")
-    return {"snapshots": new, "snapshotsNewer": touched - new, "notes": notes, "goals": goals}
+    return {"snapshots": new, "snapshotsNewer": touched - new, "notes": notes, "goals": goals,
+            "profiles": profiles}
 
 
 def _merge_presets(data):

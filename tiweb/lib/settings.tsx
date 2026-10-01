@@ -15,6 +15,9 @@ interface Settings {
   t: Dict;
   live: { connected: boolean; version: number; alerts: Alert[];
           save: { date: string; save: string; faction?: string } | null };
+  /** richiede di nuovo le allerte: dopo un cambio che le tocca senza un
+   *  salvataggio nuovo (es. i profili di reclutamento) */
+  refreshAlerts: () => void;
 }
 
 const Ctx = createContext<Settings | null>(null);
@@ -46,6 +49,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
      snapshot: al cambio di lingua, o a ogni salvataggio, si richiedono nella
      lingua scelta. Fallisce senza salvataggio: restano quelle dell'evento. */
   const [langAlerts, setLangAlerts] = useState<{ lang: string; alerts: Alert[] } | null>(null);
+  const [alertsKey, setAlertsKey] = useState(0);
   useEffect(() => {
     if (!live.save) return;
     let alive = true;
@@ -53,7 +57,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       .then((d) => { if (alive && Array.isArray(d.alerts)) setLangAlerts({ lang: game, alerts: d.alerts }); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [game, live.version, live.save]);
+  }, [game, live.version, live.save, alertsKey]);
 
   const setGame = (l: string) => {
     setGameRaw(l);
@@ -67,7 +71,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setNumberLocale(GAME_LOCALES[game] ?? "en-GB");
       setCurrentDict(t);
       const alerts = langAlerts?.lang === game ? langAlerts.alerts : live.alerts;
-      return { ui, game, setGame, t, live: { ...live, alerts } };
+      return { ui, game, setGame, t, live: { ...live, alerts },
+               refreshAlerts: () => setAlertsKey((k) => k + 1) };
     },
     [game, live, langAlerts],
   );

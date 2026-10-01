@@ -2,11 +2,12 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useSnapshot } from "@/lib/api";
+import { useApi, useSnapshot } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
-import { AttrIcon, Empty, Panel, ResourceIcon } from "@/components/ui";
+import { AttrIcon, Empty, Panel, ResourceIcon, Tag } from "@/components/ui";
 import { Guide } from "@/components/Guide";
 import { CouncilorCard, RES, short, signed } from "@/components/CouncilorCard";
+import { RecruitProfiles, type ProfilesData } from "@/components/RecruitProfiles";
 import { ATTRS, type Attr, type Councilor, type Coverage, type Income } from "@/lib/types";
 
 const MAX_COMPARE = 3;
@@ -104,6 +105,7 @@ export default function RecruitsPage() {
   const [sort, setSort] = useState<Sort>("covers");
   const [pickedIds, setPickedIds] = useState<number[]>([]);
   const [mission, setMission] = useState<string | null>(null);
+  const profiles = useApi<ProfilesData>(`/api/profiles?lang=${game}`, [live.version]);
 
   if (error) return <Empty>{t.common.error}: {error}</Empty>;
   if (!snap) return <Empty>{t.common.loading}</Empty>;
@@ -129,6 +131,14 @@ export default function RecruitsPage() {
     .filter((c): c is Councilor => !!c);
   const toggle = (id: number) => setPickedIds((ids) =>
     ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id].slice(-MAX_COMPARE));
+
+  // id candidato -> nomi dei profili attivi a cui corrisponde
+  const matchedBy = new Map<number, string[]>();
+  for (const pr of profiles.data?.profiles ?? []) {
+    for (const h of profiles.data?.matches[String(pr.id)] ?? []) {
+      matchedBy.set(h.id, [...(matchedBy.get(h.id) ?? []), pr.name]);
+    }
+  }
 
   const btn = (active: boolean) => `px-2 py-1 rounded border text-[12px] ${
     active ? "border-accent text-accent bg-accent/10" : "border-edge text-dim hover:text-ink"}`;
@@ -192,6 +202,8 @@ export default function RecruitsPage() {
         </> : <span className="text-faint">{t.recruit.missionFilterHint}</span>}
       </div>
 
+      {profiles.data && <RecruitProfiles data={profiles.data} onChange={profiles.reload} />}
+
       {picked.length > 0 && (
         <Compare picked={picked} coverage={snap.council.coverage}
           onClear={() => setPickedIds([])} />
@@ -205,13 +217,14 @@ export default function RecruitsPage() {
             onMission={(id) => setMission((cur) => (cur === id ? null : id))}
             action={(() => {
               const on = pickedIds.includes(c.id);
-              return (
+              return (<>
+                {(matchedBy.get(c.id) ?? []).map((n) => <Tag key={n} tone="mine">{n}</Tag>)}
                 <button onClick={() => toggle(c.id)} disabled={!on && pickedIds.length >= MAX_COMPARE}
                   className={`px-1.5 py-[1px] border text-[11px] disabled:opacity-40 ${
                     on ? "border-accent text-accent bg-accent/10" : "border-edge text-dim hover:text-ink"}`}>
                   {on ? "✓ " : ""}{t.recruit.compare}
                 </button>
-              );
+              </>);
             })()} />
         ))}
       </div>

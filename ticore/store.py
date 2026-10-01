@@ -1,4 +1,4 @@
-"""Persistenza: storico degli snapshot, note e obiettivi.
+"""Persistenza: storico degli snapshot, note, obiettivi, profili di reclutamento.
 
 SQLite in ~/.ti-companion-plus/companion.db. Gli snapshot sono indicizzati
 per (campagna, data di gioco): rigiocare lo stesso giorno sovrascrive, cosi'
@@ -46,6 +46,21 @@ CREATE TABLE IF NOT EXISTS goals (
     created   REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_goals ON goals(campaign, done);
+
+-- profili di reclutamento (ticore/profiles.py): non legati a una campagna,
+-- valgono anche per la prossima partita
+CREATE TABLE IF NOT EXISTS recruit_profiles (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    data      TEXT NOT NULL,          -- JSON: name, enabled, severity, all, any, none...
+    created   REAL NOT NULL,
+    updated   REAL NOT NULL
+);
+
+-- impostazioni del companion, chiave -> JSON (es. soglie dei profili)
+CREATE TABLE IF NOT EXISTS settings (
+    key       TEXT PRIMARY KEY,
+    value     TEXT NOT NULL
+);
 """
 
 
@@ -202,3 +217,44 @@ def goal_progress(con, campaign, snap):
         late = bool(gl["due"] and snap["dateKey"] > gl["due"] and not gl["done"])
         out.append(dict(gl, current=cur, total=total, late=late))
     return out
+
+
+# ---------------------------------------------------- profili e impostazioni
+
+def list_profiles(con):
+    out = []
+    for r in con.execute("SELECT * FROM recruit_profiles ORDER BY id"):
+        out.append(dict(json.loads(r["data"]), id=r["id"], created=r["created"]))
+    return out
+
+
+def add_profile(con, data):
+    now = time.time()
+    cur = con.execute("INSERT INTO recruit_profiles (data,created,updated) VALUES (?,?,?)",
+                      (json.dumps(data, ensure_ascii=False), now, now))
+    con.commit()
+    return cur.lastrowid
+
+
+def update_profile(con, profile_id, data):
+    n = con.execute("UPDATE recruit_profiles SET data=?, updated=? WHERE id=?",
+                    (json.dumps(data, ensure_ascii=False), time.time(), profile_id)).rowcount
+    con.commit()
+    return n > 0
+
+
+def delete_profile(con, profile_id):
+    con.execute("DELETE FROM recruit_profiles WHERE id=?", (profile_id,))
+    con.commit()
+
+
+def get_setting(con, key, default=None):
+    r = con.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+    return json.loads(r["value"]) if r else default
+
+
+def set_setting(con, key, value):
+    con.execute("INSERT INTO settings (key,value) VALUES (?,?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (key, json.dumps(value, ensure_ascii=False)))
+    con.commit()
