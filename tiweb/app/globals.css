@@ -142,7 +142,8 @@ table.data tbody tr:hover td { color: var(--ink); }
 
 input, select, textarea, button { font: inherit; font-family: var(--font-sans); }
 
-input, select, textarea {
+/* i cursori (range) no: il loro aspetto lo decide il componente */
+input:not([type="range"]), select, textarea {
   background: var(--void);
   border: 1px solid var(--edge-lit);
   color: var(--ink);
