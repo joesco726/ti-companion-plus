@@ -66,6 +66,8 @@ export interface ProfilesData {
   profiles: Profile[];
   thresholds: { high: number; low: number };
   options: { traits: Option[]; missions: Option[]; attributes: Option[]; types: Option[];
+             /** gruppi da escludere in un clic: tratti fissi (profiles.trait_sets) */
+             traitSets?: { noInspire: string[]; loyaltyLoss: string[] };
              presets: Preset[]; ageRange: [number, number] };
   /** ideologia della fazione del giocatore (Destroy, Resist...): quali predefiniti escono */
   ideology?: string | null;
@@ -329,7 +331,7 @@ function Editor({ start, data, onSave, onCancel }: {
   const notMe = presets.filter((x) => !forMe.includes(x));
   const who = (xs: typeof presets) => xs.map((x) => `${x.name} (${typeName(x.type)})`).join(", ");
   const rare = chances.length > 0 && chances[0].p * 100 <= RARE_PCT ? chances[0] : null;
-  const fastNames = FAST_LEARNERS.map(label).join(" / ");
+  const fastNames = FAST_LEARNERS.map(label).join(` ${p.or} `);
   const partLabel = (tok: string) => (tok === "any" ? p.any : tok === "fast" ? fastNames : label(tok));
   return (
     <div className="border border-accent/50 bg-panel p-3 space-y-3">
@@ -350,6 +352,34 @@ function Editor({ start, data, onSave, onCancel }: {
             onChange={(e) => setD({ ...d, newMissionsOnly: e.target.checked })} />
           {p.newOnly}
         </label>
+        {(["noInspire", "loyaltyLoss"] as const).map((k) => {
+          const toks = (data.options.traitSets?.[k] ?? []).map((id) => `trait:${id}`);
+          if (!toks.length) return null;
+          const on = toks.every((x) => d.none.includes(x));
+          // un clic mette tutto il gruppo fra «nessuna» (togliendolo dalle altre
+          // liste), il secondo lo toglie; i singoli tratti restano modificabili
+          // spegnendo, restano i tratti che anche un altro gruppo acceso esclude
+          // (Cynic sta in tutti e due)
+          const sets = data.options.traitSets ?? { noInspire: [], loyaltyLoss: [] };
+          const keep = (["noInspire", "loyaltyLoss"] as const).filter((o) => o !== k)
+            .map((o) => sets[o].map((id) => `trait:${id}`))
+            .filter((xs) => xs.length && xs.every((v) => d.none.includes(v))).flat();
+          const toggle = () => setD((x) => on
+            ? { ...x, none: x.none.filter((v) => !toks.includes(v) || keep.includes(v)) }
+            : { ...x, all: x.all.filter((v) => !toks.includes(v)), any: x.any.filter((v) => !toks.includes(v)),
+                none: [...x.none, ...toks.filter((v) => !x.none.includes(v))] });
+          return (
+            <Tip key={k} title={p.sets[k]} width={320} content={
+              <><p className="m-0">{p.sets[`${k}Hint`]}</p>
+                <p className="m-0 mt-1.5 text-ink">{toks.map(label).join(", ")}</p></>
+            }>
+              <button type="button" onClick={toggle}
+                className={`px-1.5 py-[1px] border text-[12px] ${on ? TONE.none : "border-edge text-dim hover:text-ink"}`}>
+                {MARK.none}{p.sets[k]}
+              </button>
+            </Tip>
+          );
+        })}
         <label className="flex items-center gap-1.5" title={p.fastHint}>
           <input type="checkbox" checked={!!d.fastLearner}
             onChange={(e) => setD({ ...d, fastLearner: e.target.checked })} />
@@ -448,7 +478,7 @@ export function RecruitProfiles({ data, onChange }: {
     ["all", p.all], ["any", p.any], ["none", p.none],
   ] as [ListKey, string][]).filter(([k]) => pr[k].length)
     .map(([k, title]) => `${title}: ${pr[k].map(label).join(", ")}`)
-    .concat(pr.fastLearner ? [p.fastLearner.replace("{names}", FAST_LEARNERS.map(label).join(" / "))] : [])
+    .concat(pr.fastLearner ? [p.fastLearner.replace("{names}", FAST_LEARNERS.map(label).join(` ${p.or} `))] : [])
     .join(" · ");
 
   const active = data.profiles.filter((x) => x.enabled).length;

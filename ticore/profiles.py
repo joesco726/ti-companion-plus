@@ -230,6 +230,40 @@ def _trait_rank(k, t):
     return len(order) if order else 0
 
 
+# gruppi di tratti da escludere in un clic (pulsanti dell'editor). Solo tratti
+# con cui un candidato puo' uscire e che non si possono togliere: il gioco ne
+# toglie uno con un aumento solo se uno dei suoi costi e' negativo
+# (TITraitTemplate.CouncilorCanRemoveByAugment: Paranoid -40 XP, Corrupt...)
+_COSTS = ("XPCost", "moneyCost", "influenceCost", "opsCost", "boostCost")
+# Family Ties perde lealta' solo se la regione d'origine subisce un attacco
+# nucleare: escluso su richiesta, e' quasi sempre un tratto voluto
+_LOYALTY_EXCEPT = {"FamilyTies"}
+
+
+def removable(t):
+    return any((t.get(k) or 0) < 0 for k in _COSTS)
+
+
+def trait_sets():
+    """{"noInspire": [...], "loyaltyLoss": [...]}: tratti fissi che vietano
+    Ispira, e tratti fissi con cui il consigliere continua a poter perdere
+    lealta' vera (dopo atrocita', fallimenti critici...; non la lealta'
+    apparente, non un malus fisso)."""
+    tpl = gamedata.templates()["traits"]
+    ok = {k: t for k, t in tpl.items()
+          if k != "dummy" and not is_augment(k) and spawnable(k) and not removable(t)}
+    no_inspire = sorted(k for k, t in ok.items() if "Inspire" in (t.get("restrictedMissionNames") or []))
+    # solo perdite che continuano a scattare: dopo un evento (regola
+    # LoyaltyLoss...) o finche' vale una condizione. Un malus fisso e
+    # dichiarato (Cynic -1, Sociopath -3) non conta: lo si vede gia' al
+    # reclutamento e non peggiora
+    loss = sorted(k for k, t in ok.items() if k not in _LOYALTY_EXCEPT and (
+        any(m.get("stat") == "Loyalty" and m.get("operation") == "Additive" and m.get("condition")
+            and (gamedata._num(m.get("strValue")) or 0) < 0 for m in t.get("statMods") or [])
+        or str(t.get("specialTraitRule") or "").startswith("LoyaltyLoss")))
+    return {"noInspire": no_inspire, "loyaltyLoss": loss}
+
+
 def options(lang, used=()):
     """Cosa si puo' scegliere: tratti che un candidato puo' avere (niente aumenti,
     niente gradi da XP o da eventi), missioni, attributi. `used`: tratti gia'
@@ -265,6 +299,7 @@ def options(lang, used=()):
     types = [{"id": k, "name": gamedata.councilor_type_name(lang, k)}
              for k in tpl["councilorTypes"] if k != "Alien"]
     return {"traits": traits, "missions": by_name(missions), "attributes": attrs,
+            "traitSets": trait_sets(),
             "types": by_name(types), "presets": presets(lang), "ageRange": [AGE_MIN, AGE_MAX]}
 
 
