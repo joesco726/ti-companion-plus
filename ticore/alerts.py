@@ -261,6 +261,8 @@ def mine_network(cur, prev):
 
 
 CARRIER_DAYS = 150                  # allerta critica entro questi giorni dall'arrivo
+# l'etichetta stringe man mano che la flotta si avvicina: (giorni, chiave)
+CARRIER_TAGS = ((20, "flash"), (60, "immediate"), (CARRIER_DAYS, "priority"))
 
 
 def assault_carriers(cur, prev):
@@ -272,7 +274,9 @@ def assault_carriers(cur, prev):
         if f["days"] > CARRIER_DAYS:
             continue
         out.append(_alert("carrier:%s" % f["id"], "critical",
-                          t("alert.carrier.title", lang, f["name"], round(f["days"])),
+                          t("alert.carrier.title", lang,
+                            t("alert.carrier." + next(k for d, k in CARRIER_TAGS if f["days"] <= d), lang),
+                            f["name"], round(f["days"])),
                           t("alert.carrier.detail", lang, f["arrival"], f["carriers"], f["ships"]),
                           tab="space"))
     return out
