@@ -15,6 +15,9 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
 import { AttrIcon, Button, Tag } from "@/components/ui";
+import { Tip } from "@/components/Tip";
+import { conditionText, describe, TONE as FX_TONE } from "@/components/CouncilorCard";
+import type { TraitEffect } from "@/lib/types";
 import { impossible, indexOf, presetMatches, RARE_PCT, typeChances } from "@/lib/profileCheck";
 
 /** 0,4% / 3% / 25%: un decimale solo sotto l'1% */
@@ -45,6 +48,9 @@ export interface Option {
   grants?: string[]; restricts?: string[];
   /** solo tratti: {tipo: probabilita' in %} su un consigliere nuovo */
   chances?: Record<string, number>;
+  /** solo tratti: descrizione del gioco ed effetti dal template */
+  description?: string | null;
+  effects?: TraitEffect[];
 }
 
 /** consigliere predefinito del gioco, con tratti fissi */
@@ -173,13 +179,34 @@ function ConditionGrid({ d, setD, data }: {
 
   const f = filter.trim().toLowerCase();
   const shown = (name: string) => !f || name.toLowerCase().includes(f);
-  const chip = (tok: string, name: string) => {
+  const chip = (tok: string, name: string, tip?: React.ReactNode) => {
     const st = stateOf(tok);
-    return (
-      <button key={tok} onClick={() => setState(tok, NEXT[st])} title={p.legend}
+    const button = (
+      <button key={tok} onClick={() => setState(tok, NEXT[st])} title={tip ? undefined : p.legend}
         className={`px-1.5 py-[1px] border text-[12px] text-left ${TONE[st]}`}>
         {MARK[st]}{name}
       </button>
+    );
+    return tip ? <Tip key={tok} title={name} width={320} content={tip}>{button}</Tip> : button;
+  };
+  /** cosa fa un tratto, come nella scheda del consigliere: un effetto per
+   *  riga, con la condizione per esteso, poi la descrizione del gioco */
+  const traitTip = (o: Option) => {
+    const fx = o.effects ?? [];
+    return (
+      <>
+        {fx.map((e, i) => {
+          const f = describe(e, t);
+          const when = "when" in e ? conditionText(e.when, t) : null;
+          return (
+            <div key={i} className={FX_TONE[f.tone]}>
+              {f.text}{when && <span className="text-faint"> — {when}</span>}
+            </div>
+          );
+        })}
+        {o.description && <p className={`m-0 text-faint italic ${fx.length ? "mt-1.5" : ""}`}>{o.description}</p>}
+        {!fx.length && !o.description && <span className="text-faint">—</span>}
+      </>
     );
   };
   const count = (kinds: string[]) => [...d.all, ...d.any, ...d.none]
@@ -237,7 +264,7 @@ function ConditionGrid({ d, setD, data }: {
                 // le sezioni con tanti tratti prendono piu' spazio nella riga
                 <div key={String(g)} className="min-w-[10rem]" style={{ flex: `${items.length} 1 0` }}>
                   <div className="text-dim text-[11px] uppercase tracking-[.06em] mb-1">{groupName(g)}</div>
-                  <div className="flex flex-wrap gap-1.5">{items.map((o) => chip(`trait:${o.id}`, o.name))}</div>
+                  <div className="flex flex-wrap gap-1.5">{items.map((o) => chip(`trait:${o.id}`, o.name, traitTip(o)))}</div>
                 </div>
               );
             })}

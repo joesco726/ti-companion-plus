@@ -480,6 +480,12 @@ const it = {
     traitsHint:
       "Effetti letti dai template del gioco. Gli attributi mostrati sopra possono già includerli: sono il perché di un numero, non un'aggiunta.",
     conditional: "solo a certe condizioni",
+    cond: {
+      nation: "se {stat} {sign} {value} nella nazione", homeNation: "nella nazione d'origine",
+      nukesUsed: "se sono state usate armi nucleari", resource: "se {res} {sign} {value}",
+      democracy: "Democrazia", education: "Istruzione", cohesion: "Coesione",
+      inequality: "Disuguaglianza", unrest: "Disordini",
+    },
     fxLoyalty: "lealtà reale",
     fxApparentLoyalty: "lealtà apparente",
     fxTransparent: "la lealtà apparente è quella reale",
@@ -1437,6 +1443,12 @@ const en: typeof it = {
     traitsHint:
       "Effects read from the game templates. The attributes above may already include them: they explain a number, they don't add to it.",
     conditional: "only under some conditions",
+    cond: {
+      nation: "if {stat} {sign} {value} in the nation", homeNation: "in their home nation",
+      nukesUsed: "if nuclear weapons have been used", resource: "if {res} {sign} {value}",
+      democracy: "Democracy", education: "Education", cohesion: "Cohesion",
+      inequality: "Inequality", unrest: "Unrest",
+    },
     fxLoyalty: "real loyalty",
     fxApparentLoyalty: "apparent loyalty",
     fxTransparent: "apparent loyalty is the real one",

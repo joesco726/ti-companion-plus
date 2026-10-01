@@ -243,6 +243,9 @@ def options(lang, used=()):
                "group": tpl["traits"][k].get("grouping"),
                "types": spawn_types(k),
                "chances": spawn_chances(k),
+               # suggerimento della griglia: descrizione del gioco ed effetti
+               "description": gamedata.trait_description(lang, k),
+               "effects": gamedata.trait_effects(lang, k),
                "grants": tpl["traits"][k].get("missionsGrantedNames") or [],
                "restricts": tpl["traits"][k].get("restrictedMissionNames") or []}
               for k in tpl["traits"]
