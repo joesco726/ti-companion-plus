@@ -159,7 +159,7 @@ export interface Nation {
   unrest: number;
   inequality: number;
   support: number;
-  /** la fazione col sostegno piu' alto (Undecided escluso), quota 0-1 */
+  /** la quota piu' alta dell'opinione pubblica, 0-1: una fazione o «Undecided» */
   topOpinion: { id: string; name: string; share: number } | null;
   difficulty: number;
   spaceFunding: number;

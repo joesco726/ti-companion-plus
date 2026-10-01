@@ -93,15 +93,18 @@ def nations(g, lang="ita"):
         op = _now(n.get("historyPublicOpinion")) or n.get("publicOpinion") or {}
         op = op if isinstance(op, dict) else {}
         # l'opinione pubblica ha per chiave l'ideologia (Resist = ResistCouncil);
-        # «Undecided» non e' una fazione e resta fuori dal primo posto
-        ranked = sorted(((k, v) for k, v in op.items() if k != "Undecided"),
-                        key=lambda kv: -kv[1])
+        # «Undecided» non e' una fazione ma puo' essere la quota piu' alta
+        ranked = sorted(op.items(), key=lambda kv: -kv[1])
         top = None
         if ranked:
             k, v = ranked[0]
-            f = next((x for x in g.factions.values()
-                      if x.get("templateName") == k + "Council"), None)
-            top = {"id": k + "Council", "name": nm.faction(f) or k, "share": v}
+            if k == "Undecided":
+                top = {"id": k, "share": v, "name": gamedata.loc(
+                    lang, "TIFactionIdeologyTemplate", "undecided", "public", k)}
+            else:
+                f = next((x for x in g.factions.values()
+                          if x.get("templateName") == k + "Council"), None)
+                top = {"id": k + "Council", "name": nm.faction(f) or k, "share": v}
         out.append({
             "id": nation_id(n),              # chiave stabile: il nome cambia con la lingua
             "name": name,
