@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useApi, useSnapshot } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
-import { AttrIcon, Empty, MissionIcon, Panel, ResourceIcon, Tag } from "@/components/ui";
+import { AttrIcon, Empty, GameIcon, MissionIcon, Panel, ResourceIcon, Tag } from "@/components/ui";
+import { CATEGORY_ICON, INCOME_ICON, ORG_BONUS_ICON } from "@/lib/gameIcons";
 import { CouncilorCard, short } from "@/components/CouncilorCard";
 import { MissionFinder } from "@/components/MissionFinder";
 import { Tip } from "@/components/Tip";
@@ -159,17 +160,37 @@ export default function CouncilPage() {
             // i profili delle org a cui corrisponde
             const matched = (orgProfiles.data?.profiles ?? []).filter((pr) =>
               (orgProfiles.data?.matches[String(pr.id)] ?? []).some((h) => h.id === o.id));
-            const bits: string[] = [];
-            for (const [k, v] of Object.entries(o.income)) if (v) bits.push(`${v > 0 ? "+" : ""}${v} ${k}`);
-            for (const [k, v] of Object.entries(o.attributes)) if (v) bits.push(`+${v} ${short(k)}`);
-            if (o.projectSlots) bits.push(`+${o.projectSlots} slot`);
-            // priorita', spazio ed estrazione, ricerca: coi nomi delle opzioni dei profili
+            // cio' che l'org da', con le icone del gioco come nella sua scheda:
+            // attributi «+1 [icona]», priorita' e ricerca «+2% [icona] Nome»,
+            // rendite «+ [icona] 4»
             const opt = orgProfiles.data?.options;
             const nameOf = (xs: { id: string; name: string | null }[] | undefined, id: string) =>
               xs?.find((x) => x.id === id)?.name
               ?? (id === "miningBonus" ? t.orgProfiles.mining : id === "spaceflightBonus" ? t.orgProfiles.spaceflight : id);
-            for (const [k, v] of Object.entries(o.bonuses ?? {})) if (v) bits.push(`+${Math.round(v * 1000) / 10}% ${nameOf(opt?.priorities, k)}`);
-            for (const [k, v] of Object.entries(o.techBonuses ?? {})) if (v) bits.push(`+${Math.round(v * 1000) / 10}% ${nameOf(opt?.science, k)}`);
+            const sign = (v: number) => (v < 0 ? "−" : "+");
+            const pctOf = (v: number) => `${sign(v)}${Math.round(Math.abs(v) * 1000) / 10}%`;
+            const bits: React.ReactNode[] = [];
+            for (const [k, v] of Object.entries(o.attributes)) if (v) bits.push(
+              <span key={`a${k}`} className="inline-flex items-center gap-0.5" title={short(k)}>
+                {sign(v)}{Math.abs(v)}<AttrIcon attr={k} size={14} title={short(k)} />
+              </span>);
+            for (const [k, v] of Object.entries(o.bonuses ?? {})) if (v) bits.push(
+              <span key={`b${k}`} className="inline-flex items-center gap-0.5">
+                {pctOf(v)}{ORG_BONUS_ICON[k] && <GameIcon bundle="icons_2d" icon={ORG_BONUS_ICON[k]} size={14} />}
+                {/* senza icona (estrazione) serve lo spazio */}
+                <span className={ORG_BONUS_ICON[k] ? "" : "ml-1"}>{nameOf(opt?.priorities, k)}</span>
+              </span>);
+            for (const [k, v] of Object.entries(o.techBonuses ?? {})) if (v) bits.push(
+              <span key={`s${k}`} className="inline-flex items-center gap-0.5">
+                {pctOf(v)}{CATEGORY_ICON[k] && <GameIcon bundle="icons_2d" icon={CATEGORY_ICON[k]} size={14} />}
+                <span className={CATEGORY_ICON[k] ? "" : "ml-1"}>{nameOf(opt?.science, k)}</span>
+              </span>);
+            const income: [string, number][] = [...Object.entries(o.income), ["projects", o.projectSlots]];
+            for (const [k, v] of income) if (v) bits.push(
+              <span key={`i${k}`} className="inline-flex items-center gap-0.5"
+                title={nameOf(opt?.income, k)}>
+                {sign(v)}<ResourceIcon icon={INCOME_ICON[k]} size={14} title={nameOf(opt?.income, k)} />{Math.abs(v)}
+              </span>);
             const cost = Object.entries(o.cost).filter(([, v]) => v)
               .map(([k, v]) => `${v} ${k}`).join(" + ");
             return (
@@ -188,7 +209,9 @@ export default function CouncilPage() {
                   {cost || "—"}
                   {o.paybackMonths != null && ` · ${t.council.payback} ~${o.paybackMonths} ${t.common.month}`}
                 </div>
-                <div className="text-[12px] mt-1">{bits.join(", ") || "—"}</div>
+                <div className="text-[12px] mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {bits.length ? bits : "—"}
+                </div>
                 <div className="text-[11.5px] mt-1.5">
                   <span className="text-dim">{t.council.canHold}: </span>
                   {o.eligible && o.eligible.length

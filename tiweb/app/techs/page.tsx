@@ -7,6 +7,7 @@ import { usePersistentState } from "@/lib/persist";
 import { Empty, GameIcon, Panel, ResourceIcon, Tag, nf } from "@/components/ui";
 import { Guide } from "@/components/Guide";
 import { Tip, TipRow } from "@/components/Tip";
+import { CATEGORY_ICON } from "@/lib/gameIcons";
 
 interface Ref { id: string; name: string }
 interface Project {
@@ -61,13 +62,6 @@ const THEME_ICON: Record<Theme, { bundle: "icons_2d" | "councilor_missions"; ico
   space: { bundle: "icons_2d", icon: "ICO_boost" },
 };
 
-/** Icona della categoria, come nella lista del gioco (TIGenericTechTemplate.categoryIcon). */
-const CATEGORY_ICON: Record<string, string> = {
-  Energy: "tech_energy_icon", InformationScience: "tech_info_icon",
-  LifeScience: "tech_life_icon", Materials: "tech_material_icon",
-  MilitaryScience: "tech_military_icon", SocialScience: "tech_social_icon",
-  SpaceScience: "tech_space_icon", Xenology: "tech_xeno_icon",
-};
 const SORTS = ["category", "cost", "now"] as const;
 type Sort = (typeof SORTS)[number];
 const TABS = ["techs", "projects"] as const;
