@@ -54,6 +54,10 @@ type SortKey = "site" | "body" | "au" | "window" | "value" | "status" | "occupie
 const ASC_FIRST: SortKey[] = ["site", "body", "au", "window", "occupied"];
 const LIMIT = 40;
 
+/** rendite delle org: anche negative (un'org puo' costare spinta al mese) */
+const signed = (v: number, d: number) => (v ? `${v > 0 ? "+" : ""}${nf(v, d)}` : "—");
+const tone = (v: number) => (v > 0 ? "text-good" : v < 0 ? "text-bad" : "text-faint");
+
 const digits = (v: number) => (v < 1 ? 2 : v < 10 ? 1 : 0);
 
 /** Resa di una risorsa: vera se il corpo e' prospettato, altrimenti la
@@ -454,12 +458,8 @@ function Orgs({ data }: { data: Mining }) {
                     </span>
                   ) : <span className="text-faint">—</span>}
                 </td>
-                <td className={`py-1.5 pr-3 text-right ${o.boost ? "text-good" : "text-faint"}`}>
-                  {o.boost ? `+${nf(o.boost, 1)}` : "—"}
-                </td>
-                <td className={`py-1.5 pr-3 text-right ${o.missionControl ? "text-good" : "text-faint"}`}>
-                  {o.missionControl ? `+${nf(o.missionControl, 0)}` : "—"}
-                </td>
+                <td className={`py-1.5 pr-3 text-right ${tone(o.boost)}`}>{signed(o.boost, 1)}</td>
+                <td className={`py-1.5 pr-3 text-right ${tone(o.missionControl)}`}>{signed(o.missionControl, 0)}</td>
                 <td className="py-1.5 whitespace-nowrap">
                   {o.where === "market" ? (
                     <span className="inline-flex gap-2.5">
