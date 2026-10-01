@@ -26,6 +26,9 @@ from . import gamedata
 from .council import ATTRS
 
 THRESHOLDS = {"high": 6, "low": 2}
+# limiti del cursore dell'eta': agli estremi il profilo non filtra per eta'
+# (nei salvataggi i consiglieri vanno da 21 a 73 anni, i candidati da 33 a 57)
+AGE_MIN, AGE_MAX = 20, 80
 SEVERITIES = ("warning", "info")
 KINDS = ("trait", "mission", "high", "low")
 _TOKEN = re.compile(r"^(trait|mission|high|low):([A-Za-z0-9_]+)$")
@@ -139,6 +142,10 @@ def normalize(p, thresholds=None):
         "any": tokens("any"),
         "none": tokens("none"),
         "newMissionsOnly": bool(p.get("newMissionsOnly")),
+        # fascia d'eta' (anni compiuti, come nella schermata di reclutamento);
+        # None = nessun limite da quella parte
+        "ageMin": _age(p.get("ageMin"), AGE_MIN),
+        "ageMax": _age(p.get("ageMax"), AGE_MAX),
     } if not org else {
         "kind": "org",
         "name": str(p.get("name") or "").strip()[:80],
@@ -151,6 +158,17 @@ def normalize(p, thresholds=None):
         "affordableOnly": p.get("affordableOnly") is not False,
         "holdableOnly": p.get("holdableOnly") is not False,
     }
+
+
+def _age(v, edge):
+    """Un estremo della fascia d'eta': intero fra i limiti, None se manca o se
+    sta sul limite (= nessun filtro da quella parte)."""
+    try:
+        v = int(v)
+    except (TypeError, ValueError):
+        return None
+    v = max(AGE_MIN, min(AGE_MAX, v))
+    return None if v == edge else v
 
 
 def normalize_thresholds(th):
@@ -167,6 +185,9 @@ def normalize_thresholds(th):
 def label(token, lang, thresholds, c=None):
     """Nome leggibile di una condizione, coi nomi della localizzazione del gioco.
     Con il candidato `c`, gli attributi mostrano anche il suo valore."""
+    if token == "age":
+        from .texts import t
+        return t("profile.age", lang, (c or {}).get("age"))
     kind, ident = token.split(":", 1)
     if kind == "trait":
         return gamedata.trait_name(lang, ident)
@@ -234,7 +255,7 @@ def options(lang, used=()):
     types = [{"id": k, "name": gamedata.councilor_type_name(lang, k)}
              for k in tpl["councilorTypes"] if k != "Alien"]
     return {"traits": traits, "missions": by_name(missions), "attributes": attrs,
-            "types": by_name(types), "presets": presets(lang)}
+            "types": by_name(types), "presets": presets(lang), "ageRange": [AGE_MIN, AGE_MAX]}
 
 
 def _test(c, token, thresholds, new_only):
@@ -255,6 +276,11 @@ def match(c, p, thresholds):
     candidato non corrisponde al profilo."""
     if not p.get("all") and not p.get("any"):
         return None
+    # fascia d'eta': chi non ha una data di nascita non si esclude
+    age = c.get("age")
+    lo, hi = p.get("ageMin"), p.get("ageMax")
+    if age is not None and ((lo is not None and age < lo) or (hi is not None and age > hi)):
+        return None
     new_only = p.get("newMissionsOnly")
     met_all = [x for x in p["all"] if _test(c, x, thresholds, new_only)]
     if len(met_all) < len(p["all"]):
@@ -265,7 +291,8 @@ def match(c, p, thresholds):
     # "non ha": la missione conta se c'e', che il consiglio la abbia o no
     if any(_test(c, x, thresholds, False) for x in p["none"]):
         return None
-    return met_all + met_any
+    with_age = ["age"] if age is not None and (lo is not None or hi is not None) else []
+    return met_all + met_any + with_age
 
 
 def matches(snap, profiles, thresholds):

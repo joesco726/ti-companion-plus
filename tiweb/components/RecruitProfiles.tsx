@@ -32,6 +32,9 @@ export interface Profile {
   any: string[];
   none: string[];
   newMissionsOnly: boolean;
+  /** fascia d'eta'; null = nessun limite da quella parte */
+  ageMin?: number | null;
+  ageMax?: number | null;
 }
 
 export interface Option {
@@ -53,7 +56,7 @@ export interface ProfilesData {
   profiles: Profile[];
   thresholds: { high: number; low: number };
   options: { traits: Option[]; missions: Option[]; attributes: Option[]; types: Option[];
-             presets: Preset[] };
+             presets: Preset[]; ageRange: [number, number] };
   /** ideologia della fazione del giocatore (Destroy, Resist...): quali predefiniti escono */
   ideology?: string | null;
   /** id profilo (stringa) -> candidati che corrispondono */
@@ -62,7 +65,50 @@ export interface ProfilesData {
 
 const EMPTY: Profile = {
   name: "", enabled: true, severity: "warning", all: [], any: [], none: [], newMissionsOnly: false,
+  ageMin: null, ageMax: null,
 };
+
+/** Due cursori sulla stessa barra, con la fascia fra i due evidenziata. Agli
+ *  estremi un lato vale «nessun limite» (null). */
+function AgeRange({ d, setD, range }: {
+  d: Profile; setD: (f: (x: Profile) => Profile) => void; range: [number, number];
+}) {
+  const { t } = useSettings();
+  const p = t.recruit.profiles;
+  const [L, R] = range;
+  const lo = d.ageMin ?? L, hi = d.ageMax ?? R;
+  const pos = (v: number) => `${((v - L) / (R - L)) * 100}%`;
+  const set = (which: "ageMin" | "ageMax", v: number) => setD((x) => {
+    const cur = { lo: x.ageMin ?? L, hi: x.ageMax ?? R };
+    const nlo = which === "ageMin" ? Math.min(v, cur.hi) : cur.lo;
+    const nhi = which === "ageMax" ? Math.max(v, cur.lo) : cur.hi;
+    return { ...x, ageMin: nlo === L ? null : nlo, ageMax: nhi === R ? null : nhi };
+  });
+  // il pollice si prende col mouse, la barra sotto no: i due input si sovrappongono
+  const thumb = "absolute inset-0 w-full appearance-none bg-transparent pointer-events-none "
+    + "[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none "
+    + "[&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full "
+    + "[&::-webkit-slider-thumb]:bg-sky-300 [&::-webkit-slider-thumb]:cursor-pointer "
+    + "[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5 "
+    + "[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-sky-300 [&::-moz-range-thumb]:border-0";
+  const any = d.ageMin == null && d.ageMax == null;
+  return (
+    <span className="flex items-center gap-2 text-[12px]">
+      <span className="text-dim">{p.age}</span>
+      <span className="relative w-44 h-4 flex items-center">
+        <span className="absolute inset-x-0 h-1.5 rounded bg-edge-lit" />
+        <span className="absolute h-1.5 rounded bg-sky-300" style={{ left: pos(lo), width: `calc(${pos(hi)} - ${pos(lo)})` }} />
+        <input type="range" min={L} max={R} value={lo} aria-label={p.ageFrom}
+          onChange={(e) => set("ageMin", Number(e.target.value))} className={thumb} />
+        <input type="range" min={L} max={R} value={hi} aria-label={p.ageTo}
+          onChange={(e) => set("ageMax", Number(e.target.value))} className={thumb} />
+      </span>
+      <span className={`tabular-nums w-16 ${any ? "text-faint" : "text-sky-300"}`}>
+        {any ? p.ageAny : `${lo}–${hi}`}
+      </span>
+    </span>
+  );
+}
 
 /** Nome leggibile di una condizione `tipo:id`, dai nomi del gioco. */
 function useLabel(data: ProfilesData) {
@@ -168,6 +214,7 @@ function ConditionGrid({ d, setD, data }: {
         ))}
         <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={p.filter}
           className="bg-transparent border border-edge px-1.5 py-[2px] text-[12px] w-48" />
+        <AgeRange d={d} setD={setD} range={data.options.ageRange ?? [20, 80]} />
         <span className="text-faint text-[11.5px]">{p.legend}</span>
       </div>
 
@@ -370,7 +417,9 @@ export function RecruitProfiles({ data, onChange }: {
               <Tag tone={pr.severity === "warning" ? "warn" : "dim"}>
                 {pr.severity === "warning" ? p.severityWarning : p.severityInfo}
               </Tag>
-              <span className="text-dim">{summary(pr)}{pr.newMissionsOnly ? ` · ${p.newOnlyShort}` : ""}</span>
+              <span className="text-dim">{summary(pr)}{pr.newMissionsOnly ? ` · ${p.newOnlyShort}` : ""}
+                {pr.ageMin != null || pr.ageMax != null
+                  ? ` · ${p.age} ${pr.ageMin ?? data.options.ageRange[0]}–${pr.ageMax ?? data.options.ageRange[1]}` : ""}</span>
               <span className={hits.length ? "text-good" : "text-faint"}>
                 {!pr.enabled ? p.off : hits.length
                   ? `${p.matchesNow}: ${hits.map((h) => h.name).join(", ")}` : p.noMatches}
