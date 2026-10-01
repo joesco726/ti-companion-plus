@@ -240,11 +240,11 @@ con `isAI == false`.
   GlobalCheckNotifyFleetLaunch`): il gioco stesso notifica, al lancio, una flotta aliena
   visibile (intel ≥ 0,1, posizione e composizione) con un modulo `LandArmy` (Alien Army
   Pod) diretta alla Terra o a un'orbita terrestre, con la data d'arrivo. L'allerta critica
-  resta accesa sotto i 150 giorni all'arrivo. Nel salvataggio le date della traiettoria
+  resta accesa sotto i 180 giorni all'arrivo. Nel salvataggio le date della traiettoria
   sono spesso `{"$ref": id}` (riferimenti di Json.NET): vanno risolte.
   **Niente spoiler**: i testi dicono solo ciò che dice la notifica del gioco (portaerei
-  d'assalto, orbita terrestre, data). Etichetta per i giorni rimasti: PRIORITÀ fino a 150,
-  IMMEDIATO da 60, FLASH da 20.
+  d'assalto, orbita terrestre, data). Etichetta per i giorni rimasti: PRIORITÀ fino a 180,
+  IMMEDIATO da 100, FLASH da 20 (una nave si costruisce in circa 90 giorni).
   Dopo il primo sbarco visto (pietra miliare `AliensLandArmy` nelle `milestones` della
   fazione: il gioco la completa per tutte e lo notifica) il dettaglio finisce col motto
   della fazione (`alert.carrier.motto.<templateName>`), o sempre con l'opzione «motti delle

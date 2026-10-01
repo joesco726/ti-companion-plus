@@ -260,9 +260,11 @@ def mine_network(cur, prev):
                    tab="space")]
 
 
-CARRIER_DAYS = 150                  # allerta critica entro questi giorni dall'arrivo
+# allerta critica entro questi giorni dall'arrivo: una nave si costruisce in
+# circa 90 giorni, quindi la prima soglia lascia il tempo di metterne in cantiere
+CARRIER_DAYS = 180
 # l'etichetta stringe man mano che la flotta si avvicina: (giorni, chiave)
-CARRIER_TAGS = ((20, "flash"), (60, "immediate"), (CARRIER_DAYS, "priority"))
+CARRIER_TAGS = ((20, "flash"), (100, "immediate"), (CARRIER_DAYS, "priority"))
 
 
 def assault_carriers(cur, profiles=None):
