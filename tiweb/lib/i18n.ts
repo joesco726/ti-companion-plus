@@ -55,6 +55,7 @@ const it = {
   tabs: {
     overview: "Panoramica",
     council: "Consiglio",
+    orgs: "Organizzazioni",
     missions: "Missioni",
     nations: "Nazioni",
     history: "Storico",
@@ -984,6 +985,7 @@ const en: typeof it = {
   tabs: {
     overview: "Overview",
     council: "Council",
+    orgs: "Organizations",
     missions: "Missions",
     nations: "Nations",
     history: "History",

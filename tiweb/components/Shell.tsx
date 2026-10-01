@@ -16,6 +16,7 @@ import { Tip } from "@/components/Tip";
 const TABS = [
   { href: "/", key: "overview" },
   { href: "/council", key: "council" },
+  { href: "/orgs", key: "orgs" },
   { href: "/missions", key: "missions" },
   { href: "/nations", key: "nations" },
   { href: "/history", key: "history" },
