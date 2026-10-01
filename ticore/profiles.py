@@ -49,6 +49,24 @@ def spawnable(data_name):
         (e or {}).get("chance", 0) > 0 for e in t.get("classChance") or [])
 
 
+def spawn_chances(data_name):
+    """{tipo: probabilita' in %} del tratto su un consigliere nuovo di quel
+    tipo: `classChance` del tipo se > 0, altrimenti `baseChance`. Che sia una
+    percentuale per consigliere torna coi salvataggi: su 203 consiglieri
+    generati a caso, Government attesi 68 e trovati 77, Family Ties 50 e 53,
+    Affluent 48 e 52 (i tratti che si migliorano, come Agitator, se ne trovano
+    meno: sono diventati Firebrand)."""
+    t = gamedata.templates()["traits"].get(data_name) or {}
+    base = t.get("baseChance") or 0
+    own = {e.get("councilorClass"): e.get("chance", 0) for e in t.get("classChance") or []}
+    out = {}
+    for k in gamedata.templates()["councilorTypes"]:
+        c = own.get(k, 0) or base
+        if k != "Alien" and c > 0:
+            out[k] = c
+    return out
+
+
 def spawn_types(data_name):
     """I tipi di consigliere su cui il tratto puo' uscire. Un tipo senza
     probabilita' propria in `classChance` (voce assente, senza numero o a 0)
@@ -149,6 +167,7 @@ def options(lang, used=()):
     traits = [{"id": k, "name": gamedata.trait_name(lang, k),
                "group": tpl["traits"][k].get("grouping"),
                "types": spawn_types(k),
+               "chances": spawn_chances(k),
                "grants": tpl["traits"][k].get("missionsGrantedNames") or [],
                "restricts": tpl["traits"][k].get("restrictedMissionNames") or []}
               for k in tpl["traits"]

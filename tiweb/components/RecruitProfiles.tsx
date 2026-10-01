@@ -15,7 +15,10 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
 import { AttrIcon, Button, Tag } from "@/components/ui";
-import { impossible, indexOf, possibleTypes } from "@/lib/profileCheck";
+import { impossible, indexOf, RARE_PCT, typeChances } from "@/lib/profileCheck";
+
+/** 0,4% / 3% / 25%: un decimale solo sotto l'1% */
+const fmtPct = (p: number) => { const v = p * 100; return `${v < 1 ? v.toFixed(1) : Math.round(v)}%`; };
 
 type Severity = "warning" | "info";
 type ListKey = "all" | "any" | "none";
@@ -37,6 +40,8 @@ export interface Option {
   types?: string[];
   /** solo tratti: missioni che da' e che toglie */
   grants?: string[]; restricts?: string[];
+  /** solo tratti: {tipo: probabilita' in %} su un consigliere nuovo */
+  chances?: Record<string, number>;
 }
 
 export interface ProfilesData {
@@ -213,7 +218,9 @@ function Editor({ start, data, onSave, onCancel }: {
   const ix = indexOf(data);
   const bad = empty ? null : impossible(d, ix);
   const typeName = (id: string) => data.options.types.find((x) => x.id === id)?.name ?? id;
-  const types = empty || bad ? [] : possibleTypes(d, ix);
+  const chances = empty || bad ? [] : typeChances(d, ix);
+  const rare = chances.length > 0 && chances[0].p * 100 <= RARE_PCT ? chances[0] : null;
+  const partLabel = (tok: string) => (tok === "any" ? p.any : label(tok));
   return (
     <div className="border border-accent/50 bg-panel p-3 space-y-3">
       <div className="flex flex-wrap items-center gap-3 text-[12.5px]">
@@ -244,9 +251,17 @@ function Editor({ start, data, onSave, onCancel }: {
           {" "}<span className="text-dim">{p.impossibleHint}</span>
         </p>
       )}
-      {types.length > 0 && types.length < data.options.types.length && (
+      {rare && (
+        <p className="text-warn text-[12px] m-0">
+          <span aria-hidden className="mr-1">⚠</span>
+          {p.rare.replace("{type}", typeName(rare.type)).replace("{p}", fmtPct(rare.p))}
+          {" "}({rare.parts.map(([tok, v]) => `${partLabel(tok)} ${fmtPct(v)}`).join(" · ")}).
+          {" "}<span className="text-dim">{p.rareHint}</span>
+        </p>
+      )}
+      {chances.length > 0 && (
         <p className="text-faint text-[12px] m-0">
-          {p.possibleTypes} {types.map(typeName).join(", ")}
+          {p.possibleTypes} {chances.map((c) => `${typeName(c.type)} ${fmtPct(c.p)}`).join(", ")}
         </p>
       )}
       {err && <p className="text-bad text-[12px] m-0">{err}</p>}
