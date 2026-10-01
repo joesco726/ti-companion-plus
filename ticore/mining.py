@@ -42,8 +42,6 @@ schermata del gioco elenca anche il pool non assegnato della fazione
 (`UI.OrgTargeting.CouncilorTip`).
 """
 
-from functools import lru_cache
-
 from . import gamedata, transfer
 from .council import org_view
 from .factions import COUNCILOR_GATES, GATES, _faction_ref, _intel_on
@@ -114,91 +112,28 @@ def expected(profile, body_tpl, global_mult=1.0):
     return out
 
 
-# -- quanto e' buono un sito per la sua classe ----------------------------------
-# TIHabSiteState.SetDailyOutputValue: per ogni risorsa media (corretta per il
-# corpo) + k salti di una larghezza (ogni salto con probabilita' `jump`, segno
-# a caso) + uniforme nella larghezza, mai sotto minimo x U(0,8; 1,2). I nobili
-# non superano meta' o un terzo dei metalli. Le risorse "della classe" sono
-# quelle con media positiva (Carbonaceo comune: acqua e volatili): si confronta
-# la loro somma con la stessa somma su molti siti simulati della stessa classe
-# sullo stesso corpo. Il percentile e' una misura nostra; le rese sono vere
-# (corpo esplorato), ma il gioco non dice quanto sono fortunate.
-
-TOP_PERCENTILE = 0.9                # stella dal 90esimo percentile in su
-SIMULATIONS = 3000
+# -- siti sopra la forchetta della loro classe ---------------------------------
+# Prima della sonda il gioco mostra, per ogni risorsa di un sito, la forchetta
+# minima-massima della sua classe su quel corpo (`expected`). Dopo la sonda
+# mostra la resa vera. La stella dice solo che la somma delle risorse della
+# classe (quelle con media positiva nel profilo: acqua e volatili per un
+# carbonaceo) supera la somma dei massimi di quella forchetta: tutto e'
+# leggibile nel gioco. Sui siti di una partita di prova, i siti sopra la
+# forchetta sono quasi esattamente il 10% piu' alto del generatore
+# (SetDailyOutputValue): ci si arriva solo con un "salto".
 
 
 def class_resources(profile):
     return [k for k, _ in RESOURCES if (profile.get(k + "_mean") or 0) > 0]
 
 
-def _width(width, jump, global_mult):
-    """ModifyWidthValueFromSettings."""
-    if global_mult > 2:
-        return width * (2 + global_mult ** (1 - jump))
-    return width * global_mult
-
-
-def _nothing(profile, k):
-    return all((profile.get(k + f) or 0) <= 0 for f in ("_mean", "_min", "_width"))
-
-
-@gamedata.on_data_change
-@lru_cache(maxsize=512)
-def _simulated_sums(pname, f_plain, f_dense, global_mult):
-    """Somme delle risorse della classe su SIMULATIONS siti simulati, ordinate."""
-    import random
-    profile = gamedata.templates()["miningProfiles"].get(pname) or {}
+def above_range(profile, body_tpl, global_mult, monthly):
+    """(risorse della classe, somma vera, somma dei massimi mostrati) o None."""
     keys = class_resources(profile)
-    rnd = random.Random(pname)          # stesso risultato a ogni caricamento
-    none = {k: _nothing(profile, k) for k, _ in RESOURCES}
-    none["nobles"] = none["nobles"] or none["metals"]
-    par = {}
-    for k, _ in RESOURCES:
-        f = f_dense if k in _DENSE else f_plain
-        mean, mn = (profile.get(k + "_mean") or 0), (profile.get(k + "_min") or 0)
-        par[k] = ((mean * f if mean > 0 else mean) * global_mult,
-                  (mn * f if mn > 0 else mn) * global_mult,
-                  _width(profile.get(k + "_width") or 0, profile.get(k + "_jump") or 0, global_mult),
-                  profile.get(k + "_jump") or 0)
-
-    def draw(k):
-        mean, mn, w, jump = par[k]
-        n = 0
-        while rnd.random() < jump and n < 50:
-            n += 1
-        if n and rnd.random() < 0.5:
-            n = -n
-        v = mean + n * w - w / 2 + rnd.random() * w
-        v = max(v, mn * (0.8 + rnd.random() * 0.4)) if mn > 0 else max(v, 0.0)
-        return 0.0 if v < 0.01 else v
-
-    out = []
-    for _ in range(SIMULATIONS):
-        y = {}
-        for k, _ in RESOURCES:
-            if none[k]:
-                y[k] = 0.0
-            elif k == "nobles":
-                y[k] = min(y["metals"] / (2 + rnd.randrange(2)), draw(k))
-            else:
-                y[k] = draw(k)
-        out.append(sum(y[k] for k in keys))
-    out.sort()
-    return out
-
-
-def class_rank(profile, body_tpl, global_mult, monthly):
-    """(risorse della classe, percentile della loro somma fra i siti della
-    stessa classe sullo stesso corpo), o None."""
-    keys = class_resources(profile)
-    if not keys or not profile.get("dataName"):
+    if not keys:
         return None
-    sims = _simulated_sums(profile["dataName"], round(_factor(profile, body_tpl, False), 3),
-                           round(_factor(profile, body_tpl, True), 3), float(global_mult))
-    total = sum(monthly[k] for k in keys)
-    import bisect
-    return keys, bisect.bisect_left(sims, total) / len(sims)
+    exp = expected(profile, body_tpl, global_mult)
+    return keys, sum(monthly[k] for k in keys), sum(exp[k][2] for k in keys)
 
 
 def _my_effects(g, my_id):
@@ -257,10 +192,10 @@ def _sites(g, lang, my_id, nm):
         if prospected:
             y = {k: (s.get(k + "_day") or 0) * DAYS_PER_MONTH for k, _ in RESOURCES}
             rows = {k: {"value": v} for k, v in y.items()}
-            r = class_rank(profile, bt, global_mult, y)
+            r = above_range(profile, bt, global_mult, y)
             if r:
-                rank = {"resources": r[0], "percentile": round(r[1], 3),
-                        "top": r[1] >= TOP_PERCENTILE}
+                rank = {"resources": r[0], "total": round(r[1], 2), "shownMax": round(r[2], 2),
+                        "top": r[1] > r[2]}
         else:
             exp = expected(profile, bt, global_mult)
             y = {k: v[0] for k, v in exp.items()}
