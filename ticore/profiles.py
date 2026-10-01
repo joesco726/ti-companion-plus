@@ -488,6 +488,37 @@ def org_label(token, lang, o=None):
     return "%s %+g" % (name, v)
 
 
+def display_name(p, lang, thresholds=None):
+    """Il nome del profilo, o uno costruito dalle condizioni se non ne ha:
+    «Quick Learner + Striver», «Wealthy + (Connected / Eminent) · no Inflexible».
+    Il nome e' facoltativo: serve solo a riconoscere il profilo e l'allerta."""
+    if p.get("name"):
+        return p["name"]
+    org = p.get("kind") == "org"
+    th = thresholds or {"high": 6, "low": 2}
+    if org:
+        # nomi uguali in colonne diverse (la rendita «Boost» e la priorita'
+        # «Boost»): si aggiunge di che tipo sono
+        toks = p.get("all", []) + p.get("any", []) + p.get("none", [])
+        plain = {tok: org_label(tok, lang) for tok in toks}
+        twice = {n for n in plain.values() if list(plain.values()).count(n) > 1}
+        name = lambda tok: ("%s (%s)" % (plain[tok], texts_t("profile.kind." + tok.split(":")[0], lang))
+                            if plain[tok] in twice else plain[tok])
+    else:
+        name = lambda tok: label(tok, lang, th)
+    parts = []
+    if p.get("all"):
+        parts.append(" + ".join(name(x) for x in p["all"][:3]) + (" …" if len(p["all"]) > 3 else ""))
+    if p.get("any"):
+        any_ = " / ".join(name(x) for x in p["any"][:3]) + (" …" if len(p["any"]) > 3 else "")
+        parts.append("(%s)" % any_ if p.get("all") else any_)
+    out = " + ".join(parts)
+    if p.get("none"):
+        no = texts_t("profile.without", lang) % ", ".join(name(x) for x in p["none"][:2])
+        out = "%s · %s" % (out, no) if out else no
+    return out or texts_t("profile.unnamed", lang)
+
+
 def texts_t(key, lang):
     from .texts import t
     return t(key, lang)

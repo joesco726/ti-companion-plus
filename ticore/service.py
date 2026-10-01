@@ -477,6 +477,10 @@ class Service:
         """Profili e soglie per le allerte (alerts.recruit_watch e org_watch).
         Stanno nella stessa tabella: quelli delle org hanno kind «org»."""
         allp = store.list_profiles(self.con)
+        th = self._thresholds()
+        for p in allp:
+            # il nome e' facoltativo: senza, uno costruito dalle condizioni
+            p["label"] = profiles.display_name(p, self.lang, th)
         return {"profiles": [p for p in allp if p.get("kind") != "org"],
                 "orgProfiles": [p for p in allp if p.get("kind") == "org"],
                 "thresholds": self._thresholds(),
@@ -512,8 +516,6 @@ class Service:
 
     def _profile_in(self, body):
         p = profiles.normalize(body)
-        if not p["name"]:
-            raise ServiceError(400, t("err.profileName"))
         return p
 
     def profile_add(self, body, lang=None):
@@ -556,8 +558,6 @@ class Service:
 
     def _org_profile_in(self, body):
         p = profiles.normalize(dict(body or {}, kind="org"))
-        if not p["name"]:
-            raise ServiceError(400, t("err.profileName"))
         return p
 
     def org_profile_add(self, body, lang=None):

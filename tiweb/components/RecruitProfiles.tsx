@@ -29,6 +29,8 @@ export type ListKey = "all" | "any" | "none";
 export interface Profile {
   id?: number;
   name: string;
+  /** dal motore: il nome, o uno costruito dalle condizioni se manca */
+  label?: string;
   enabled: boolean;
   severity: Severity;
   all: string[];
@@ -331,6 +333,7 @@ function Editor({ start, data, onSave, onCancel }: {
       <div className="flex flex-wrap items-center gap-3 text-[12.5px]">
         <label className="flex items-center gap-1.5">{p.name}
           <input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })}
+            placeholder={p.namePlaceholder}
             className="bg-transparent border border-edge px-1.5 py-[2px] w-56" maxLength={80} />
         </label>
         <label className="flex items-center gap-1.5">{p.severity}
@@ -380,7 +383,7 @@ function Editor({ start, data, onSave, onCancel }: {
       )}
       {err && <p className="text-bad text-[12px] m-0">{err}</p>}
       <div className="flex gap-2">
-        <Button tone="primary" disabled={!d.name.trim() || empty}
+        <Button tone="primary" disabled={empty}
           onClick={() => { onSave(d).catch((e) => setErr(String(e.message ?? e))); }}>
           {p.save}
         </Button>
@@ -458,7 +461,7 @@ export function RecruitProfiles({ data, onChange }: {
             <div key={pr.id} className={`flex flex-wrap items-baseline gap-2 text-[12.5px] ${pr.enabled ? "" : "opacity-50"}`}>
               <input type="checkbox" checked={pr.enabled} title={p.enabled}
                 onChange={(e) => { void send(`/api/profiles/${pr.id}`, "PUT", { ...pr, enabled: e.target.checked }); }} />
-              <span className="font-semibold">{pr.name}</span>
+              <span className="font-semibold">{pr.label ?? pr.name}</span>
               <Tag tone={pr.severity === "warning" ? "warn" : "dim"}>
                 {pr.severity === "warning" ? p.severityWarning : p.severityInfo}
               </Tag>
@@ -471,7 +474,7 @@ export function RecruitProfiles({ data, onChange }: {
               </span>
               <span className="ml-auto flex gap-2">
                 <button onClick={() => setEditing(pr)} className="text-dim hover:text-ink underline">{p.edit}</button>
-                <button onClick={() => { if (window.confirm(p.confirmDelete.replace("{name}", pr.name))) void send(`/api/profiles/${pr.id}`, "DELETE"); }}
+                <button onClick={() => { if (window.confirm(p.confirmDelete.replace("{name}", pr.label ?? pr.name))) void send(`/api/profiles/${pr.id}`, "DELETE"); }}
                   className="text-dim hover:text-bad underline">{p.delete}</button>
               </span>
             </div>

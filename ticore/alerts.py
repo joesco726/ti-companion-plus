@@ -309,7 +309,7 @@ def recruit_watch(cur, profiles):
         for c, met in hits:
             out.append(_alert(
                 "recruit:%s:%s" % (pid, c["id"]), p["severity"],
-                t("alert.recruit.title", lang, p["name"], c["name"]),
+                t("alert.recruit.title", lang, p.get("label") or p["name"], c["name"]),
                 t("alert.recruit.detail", lang, c.get("typeName") or "?",
                   c.get("nationality") or "?",
                   ", ".join(recruit_profiles.label(x, lang, th, c) for x in met)),
@@ -328,7 +328,7 @@ def org_watch(cur, profiles):
         for o, met in hits:
             out.append(_alert(
                 "orgprofile:%s:%s" % (pid, o["id"]), p["severity"],
-                t("alert.orgprofile.title", lang, p["name"], o["name"]),
+                t("alert.orgprofile.title", lang, p.get("label") or p["name"], o["name"]),
                 t("alert.orgprofile.detail", lang, o.get("tier") or "?",
                   ", ".join(recruit_profiles.org_label(x, lang, o) for x in met),
                   ", ".join(o.get("eligible") or []) or "—"),

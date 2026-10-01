@@ -277,15 +277,20 @@ export function Button({
   tone?: "normal" | "primary" | "danger"; disabled?: boolean;
   type?: "button" | "submit";
 }) {
+  // primario: fondo tinto col colore della fazione e testo chiaro, leggibile
+  // con qualunque accento (il rosso di Prima gli Umani come testo si leggeva
+  // male). Disabilitato: grigio pieno, senza la dissolvenza che lo nascondeva
   const map = {
-    normal: "border-edge-lit text-ink hover:border-sel-edge hover:bg-sel",
-    primary: "border-accent text-accent hover:bg-accent/15",
-    danger: "border-edge-lit text-dim hover:border-bad hover:text-bad",
+    normal: "bg-control border-edge-lit text-ink hover:border-sel-edge hover:bg-sel",
+    primary: "bg-[color-mix(in_srgb,var(--accent)_22%,var(--control))] border-accent text-ink font-semibold "
+      + "hover:bg-[color-mix(in_srgb,var(--accent)_35%,var(--control))]",
+    danger: "bg-control border-edge-lit text-dim hover:border-bad hover:text-bad",
   } as const;
   return (
     <button type={type} onClick={onClick} disabled={disabled}
-      className={`bg-control border px-3 py-1 text-[12px] cursor-pointer
-        disabled:opacity-40 disabled:cursor-default transition-colors ${map[tone]}`}>
+      className={`border px-3 py-1 text-[12px] cursor-pointer transition-colors
+        disabled:cursor-default disabled:bg-control disabled:border-edge-lit disabled:text-dim
+        disabled:font-normal ${map[tone]}`}>
       {children}
     </button>
   );
