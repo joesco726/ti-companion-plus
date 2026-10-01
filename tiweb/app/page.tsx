@@ -1,11 +1,36 @@
 "use client";
 
-import { useSnapshot } from "@/lib/api";
+import { api, useApi, useSnapshot } from "@/lib/api";
 import { ResearchPanel } from "@/components/ResearchPanel";
 import { useSettings } from "@/lib/settings";
 import { GAME_LOCALES } from "@/lib/i18n";
 import { Bars, Empty, MissionIcon, Panel, ResourceIcon, Tag, nf, gameAgo } from "@/components/ui";
+import { Tip } from "@/components/Tip";
 import type { Alert, Snapshot } from "@/lib/types";
+
+/** Opzione delle allerte, spenta di default: il motto della fazione sulle
+ *  portaerei d'assalto anche prima di averne vista sbarcare una. Le allerte
+ *  si calcolano nel motore, quindi l'opzione sta nel database del companion. */
+function FactionLinesToggle() {
+  const { t, refreshAlerts } = useSettings();
+  const o = t.overview;
+  const { data, reload } = useApi<{ factionLines: boolean }>("/api/alerts/options");
+  if (!data) return null;
+  const set = async (v: boolean) => {
+    await api("/api/alerts/options", { method: "PUT", body: JSON.stringify({ factionLines: v }) });
+    reload();
+    refreshAlerts();
+  };
+  return (
+    <Tip title={o.factionLines} width={320} content={<p className="m-0">{o.factionLinesHint}</p>}>
+      <label className="flex items-center gap-1.5 text-faint text-[11.5px] cursor-pointer">
+        <input type="checkbox" className="p-0" checked={data.factionLines}
+          onChange={(e) => { void set(e.target.checked); }} />
+        {o.factionLines}
+      </label>
+    </Tip>
+  );
+}
 
 /** Siti alieni mostrati nella panoramica: solo quelli scoperti negli ultimi
  *  ALIEN_RECENT_DAYS giorni di gioco; dei piu' vecchi si dice solo quanti sono. */
@@ -75,7 +100,7 @@ export default function Overview() {
     <>
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <Panel title={t.overview.alerts}
+          <Panel title={t.overview.alerts} right={<FactionLinesToggle />}
             sub={live.alerts.length ? undefined : t.overview.noAlerts}>
             {live.alerts.length === 0
               ? null

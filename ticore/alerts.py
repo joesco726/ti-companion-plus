@@ -6,7 +6,7 @@ cosi' il frontend puo' non ripetere una notifica gia' mostrata.
 """
 
 from . import gamedata, profiles as recruit_profiles, watch as body_watch_rules
-from .texts import t
+from .texts import TEXTS, t
 
 SEVERITY_ORDER = {"critical": 0, "warning": 1, "info": 2}
 
@@ -260,26 +260,38 @@ def mine_network(cur, prev):
                    tab="space")]
 
 
-CARRIER_DAYS = 150                  # allerta critica entro questi giorni dall'arrivo
+# allerta critica entro questi giorni dall'arrivo: una nave si costruisce in
+# circa 90 giorni, quindi la prima soglia lascia il tempo di metterne in cantiere
+CARRIER_DAYS = 180
+# l'etichetta stringe man mano che la flotta si avvicina: (giorni, chiave)
+CARRIER_TAGS = ((20, "flash"), (100, "immediate"), (CARRIER_DAYS, "priority"))
 
 
-def assault_carriers(cur, prev):
+def assault_carriers(cur, profiles=None):
     """Flotta aliena visibile con portaerei d'assalto che arriva in orbita
     terrestre entro CARRIER_DAYS giorni (fleets.py)."""
     lang = _lang(cur)
+    # il motto della fazione in fondo al dettaglio: dopo il primo sbarco visto,
+    # o sempre se il giocatore l'ha chiesto (opzione «factionLines», spenta)
+    ctx = cur.get("carrierContext") or {}
+    lines = ((profiles or {}).get("alertOptions") or {}).get("factionLines")
+    key = "alert.carrier.motto." + str(ctx.get("faction"))
+    motto = (" " + t(key, lang)) if (ctx.get("landed") or lines) and key in TEXTS else ""
     out = []
     for f in cur.get("carriers") or []:
         if f["days"] > CARRIER_DAYS:
             continue
         out.append(_alert("carrier:%s" % f["id"], "critical",
-                          t("alert.carrier.title", lang, f["name"], round(f["days"])),
-                          t("alert.carrier.detail", lang, f["arrival"], f["carriers"], f["ships"]),
+                          t("alert.carrier.title", lang,
+                            t("alert.carrier." + next(k for d, k in CARRIER_TAGS if f["days"] <= d), lang),
+                            f["name"], round(f["days"])),
+                          t("alert.carrier.detail", lang, f["arrival"], f["carriers"], f["ships"]) + motto,
                           tab="space"))
     return out
 
 
 RULES = [stalled_projects, low_resources, control_points, low_opinion, council_watch,
-         alien_watch, opportunities, structural, mine_network, assault_carriers]
+         alien_watch, opportunities, structural, mine_network]
 
 
 def recruit_watch(cur, profiles):
@@ -348,7 +360,8 @@ def evaluate(cur, prev=None, profiles=None):
     out = []
     rules = [(r, (cur, prev)) for r in RULES] + [(recruit_watch, (cur, profiles)),
                                                   (org_watch, (cur, profiles)),
-                                                  (body_watch, (cur, profiles))]
+                                                  (body_watch, (cur, profiles)),
+                                                  (assault_carriers, (cur, profiles))]
     for rule, args in rules:
         try:
             out.extend(rule(*args) or [])

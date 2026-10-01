@@ -18,6 +18,9 @@ la flotta e' in viaggio, letta dall'IL di Assembly-CSharp.dll:
 
 from datetime import datetime
 
+# TIRegionUFOLandingState.TriggerLanding: allo sbarco ogni fazione completa questa
+# pietra miliare (TIFactionState.milestones) e il gioco lo notifica a tutti
+LANDED_MILESTONE = "AliensLandArmy"
 INTEL_TO_SEE = 0.1                  # TIGlobalConfig.intelToSeeSpaceAssetLocationandComposition
 LAND_ARMY = "LandArmy"              # SpecialModuleRule
 # se l'estratto non ha ancora i moduli: quello della portaerei d'assalto
