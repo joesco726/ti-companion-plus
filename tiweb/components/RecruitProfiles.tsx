@@ -14,7 +14,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";
-import { Button, Tag } from "@/components/ui";
+import { AttrIcon, Button, Tag } from "@/components/ui";
 
 type Severity = "warning" | "info";
 type ListKey = "all" | "any" | "none";
@@ -30,7 +30,7 @@ export interface Profile {
   newMissionsOnly: boolean;
 }
 
-interface Option { id: string; name: string; group?: number | null }
+interface Option { id: string; name: string; group?: number | null; attribute?: string | null }
 
 export interface ProfilesData {
   profiles: Profile[];
@@ -67,8 +67,8 @@ const MARK: Record<State, string> = { off: "", all: "✓ ", any: "◇ ", none: "
 const TONE: Record<State, string> = {
   off: "border-edge text-dim hover:text-ink hover:border-edge-lit",
   all: "border-good text-good bg-good/10",
-  // non l'accent: segue il colore della fazione, e per alcune e' rosso come «nessuna»
-  any: "border-other text-other bg-other/10",
+  // azzurro fisso, non l'accent: quello segue il colore della fazione
+  any: "border-sky-300 text-sky-300 bg-sky-300/10",
   none: "border-bad text-bad bg-bad/10",
 };
 /** ordine delle sezioni dei tratti: quello del wiki, poi i tratti senza gruppo */
@@ -101,7 +101,7 @@ function ConditionGrid({ d, setD, data }: {
     const st = stateOf(tok);
     return (
       <button key={tok} onClick={() => setState(tok, NEXT[st])} title={p.legend}
-        className={`px-1.5 py-[1px] border text-[12px] ${TONE[st]}`}>
+        className={`px-1.5 py-[1px] border text-[12px] text-left ${TONE[st]}`}>
         {MARK[st]}{name}
       </button>
     );
@@ -158,9 +158,24 @@ function ConditionGrid({ d, setD, data }: {
             <div className="flex flex-wrap gap-1.5">{items.map((o) => chip(`trait:${o.id}`, o.name))}</div>
           </div>
         ))}
+        {/* una colonna per attributo su cui tira la missione, poi quelle senza tiro */}
         {tab === "missions" && (
-          <div className="flex flex-wrap gap-1.5">
-            {data.options.missions.filter((o) => shown(o.name)).map((o) => chip(`mission:${o.id}`, o.name))}
+          <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(12rem,1fr))]">
+            {[...data.options.attributes.map((a) => a.id), null].map((attr) => {
+              const ms = data.options.missions.filter((o) => (o.attribute ?? null) === attr && shown(o.name));
+              if (!ms.length) return null;
+              const name = attr ? data.options.attributes.find((a) => a.id === attr)?.name ?? attr : p.noRoll;
+              return (
+                <div key={attr ?? "none"} className="space-y-1">
+                  <div className="text-dim text-[11px] uppercase tracking-[.06em] flex items-center gap-1">
+                    {attr && <AttrIcon attr={attr} size={13} />}{name}
+                  </div>
+                  <div className="flex flex-col items-start gap-1">
+                    {ms.map((o) => chip(`mission:${o.id}`, o.name))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
         {tab === "attributes" && (
