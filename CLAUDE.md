@@ -242,6 +242,9 @@ con `isAI == false`.
   Pod) diretta alla Terra o a un'orbita terrestre, con la data d'arrivo. L'allerta critica
   resta accesa sotto i 150 giorni all'arrivo. Nel salvataggio le date della traiettoria
   sono spesso `{"$ref": id}` (riferimenti di Json.NET): vanno risolte.
+  **Niente spoiler**: i testi dicono solo ciò che dice la notifica del gioco (portaerei
+  d'assalto, orbita terrestre, data). Etichetta per i giorni rimasti: PRIORITÀ fino a 150,
+  IMMEDIATO da 60, FLASH da 20.
 - **Bonus spaziali delle org** (`TIOrgState.description`): `spaceDevBonus` →
   Finanziamenti; `spaceflightBonus` → Programma spaziale, Capacità di lancio,
   exovelivoli; `MCBonus` → Controllo missioni. Acquisizione ostile può colpire
