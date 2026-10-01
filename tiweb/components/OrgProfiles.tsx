@@ -23,6 +23,10 @@ export interface OrgProfile {
   any: string[];
   none: string[];
   affordableOnly: boolean;
+  /** limiti per condizione, nelle unita' mostrate (priorita' e ricerca in %) */
+  ranges?: Record<string, { min?: number; max?: number }>;
+  /** dimensioni in stelle (1-3); vuoto = qualunque */
+  tiers?: number[];
   holdableOnly: boolean;
 }
 
@@ -30,15 +34,30 @@ interface Opt { id: string; name: string | null; icon?: string | null; attribute
 
 export interface OrgProfilesData {
   profiles: OrgProfile[];
-  options: { attributes: Opt[]; priorities: Opt[]; science: Opt[]; income: Opt[]; missions: Opt[] };
+  options: { attributes: Opt[]; priorities: Opt[]; science: Opt[]; income: Opt[]; missions: Opt[];
+             /** valori che un'org puo' avere per ogni condizione, [min, max] */
+             ranges: Record<string, [number, number]> };
   /** id profilo (stringa) -> org del mercato che corrispondono */
   matches: Record<string, { id: number; name: string; met: string[] }[]>;
 }
 
 const EMPTY: OrgProfile = {
   kind: "org", name: "", enabled: true, severity: "warning", all: [], any: [], none: [],
-  affordableOnly: true, holdableOnly: true,
+  affordableOnly: true, holdableOnly: true, ranges: {}, tiers: [],
 };
+
+/** Stelle della dimensione, come nel gioco (1 piccola, 3 grande). */
+export const stars = (n: number) => "★".repeat(n);
+
+/** «≥ 2 ≤ 3» accanto al nome, per riepiloghi e allerte. */
+export function rangeText(r?: { min?: number; max?: number }, pct = false) {
+  if (!r) return "";
+  const u = pct ? "%" : "";
+  if (r.min != null && r.max != null) return ` ${r.min}–${r.max}${u}`;
+  if (r.min != null) return ` ≥ ${r.min}${u}`;
+  if (r.max != null) return ` ≤ ${r.max}${u}`;
+  return "";
+}
 
 /** Nome di una condizione `tipo:id`: dal gioco, o dall'interfaccia per
  *  estrazione e programmi spaziali, che nel gioco non hanno un nome di priorita'. */
@@ -67,6 +86,18 @@ function Grid({ d, setD, data }: {
   const label = useOrgLabel(data);
   const [tab, setTab] = useState<"bonuses" | "missions">("bonuses");
 
+  const setRange = (tok: string, which: "min" | "max", raw: string) => setD((x) => {
+    const cur = { ...(x.ranges?.[tok] ?? {}) };
+    if (raw === "" || Number.isNaN(Number(raw))) delete cur[which];
+    else cur[which] = Number(raw);
+    const ranges = { ...(x.ranges ?? {}) };
+    if (cur.min == null && cur.max == null) delete ranges[tok]; else ranges[tok] = cur;
+    return { ...x, ranges };
+  });
+  const toggleTier = (n: number) => setD((x) => {
+    const has = (x.tiers ?? []).includes(n);
+    return { ...x, tiers: has ? (x.tiers ?? []).filter((v) => v !== n) : [...(x.tiers ?? []), n].sort() };
+  });
   const stateOf = (tok: string): State =>
     d.all.includes(tok) ? "all" : d.any.includes(tok) ? "any" : d.none.includes(tok) ? "none" : "off";
   const setState = (tok: string, to: State) => setD((x) => {
@@ -102,13 +133,30 @@ function Grid({ d, setD, data }: {
           <span className={`font-semibold w-28 shrink-0 ${TONE[k].split(" ")[1]}`}>
             {MARK[k]}{t.recruit.profiles[k]}
           </span>
-          {d[k].length ? d[k].map((tok) => (
-            <span key={tok} className="inline-flex items-center gap-1 border border-edge px-1.5 py-[1px]">
-              {label(tok)}
-              <button onClick={() => setState(tok, "off")} className="text-dim hover:text-bad"
-                aria-label={t.recruit.profiles.remove}>×</button>
-            </span>
-          )) : <span className="text-faint">{p[`${k}Hint` as "allHint"]}</span>}
+          {d[k].length ? d[k].map((tok) => {
+            const span = data.options.ranges[tok];
+            const r = d.ranges?.[tok] ?? {};
+            const pct = tok.startsWith("prio:") || tok.startsWith("sci:");
+            const num = (which: "min" | "max", ph?: number) => (
+              <input type="number" value={r[which] ?? ""} placeholder={ph != null ? String(ph) : ""}
+                aria-label={which === "min" ? p.atLeast : p.atMost}
+                onChange={(e) => setRange(tok, which, e.target.value)}
+                // lo stile globale degli input (padding 4px 8px) qui e' troppo
+                style={{ padding: "0 3px", width: "3.2rem" }} className="text-right tabular-nums" />
+            );
+            return (
+              <span key={tok} className="inline-flex items-center gap-1 border border-edge px-1.5 py-[1px]">
+                {label(tok)}
+                {span && <>
+                  <span className="text-faint ml-1">≥</span>{num("min", span[0])}
+                  <span className="text-faint">≤</span>{num("max", span[1])}
+                  {pct && <span className="text-faint">%</span>}
+                </>}
+                <button onClick={() => setState(tok, "off")} className="text-dim hover:text-bad ml-0.5"
+                  aria-label={t.recruit.profiles.remove}>×</button>
+              </span>
+            );
+          }) : <span className="text-faint">{p[`${k}Hint` as "allHint"]}</span>}
         </div>
       ))}
 
@@ -120,6 +168,20 @@ function Grid({ d, setD, data }: {
             {name}{n ? ` (${n})` : ""}
           </button>
         ))}
+        {/* dimensione: nessuna stella scelta = qualunque */}
+        <span className="flex items-center gap-1 text-[12px] ml-1">
+          <span className="text-dim">{p.size}</span>
+          {[1, 2, 3].map((n) => {
+            const on = (d.tiers ?? []).includes(n);
+            return (
+              <button key={n} onClick={() => toggleTier(n)} title={p.sizeHint}
+                className={`px-1.5 py-[1px] border text-[12px] tracking-tight ${on
+                  ? "border-warn text-warn bg-warn/10" : "border-edge text-dim hover:text-ink"}`}>
+                {stars(n)}
+              </button>
+            );
+          })}
+        </span>
         <span className="text-faint text-[11.5px]">{t.recruit.profiles.legend} · {p.presence}</span>
       </div>
 
@@ -219,10 +281,14 @@ export function OrgProfiles({ data, onChange }: { data: OrgProfilesData; onChang
     else await send("/api/orgprofiles", "POST", d);
     setEditing(null);
   };
-  const summary = (pr: OrgProfile) => ([
-    ["all", rp.all], ["any", rp.any], ["none", rp.none],
-  ] as [ListKey, string][]).filter(([k]) => pr[k].length)
-    .map(([k, title]) => `${title}: ${pr[k].map(label).join(", ")}`).join(" · ");
+  const withRange = (pr: OrgProfile) => (tok: string) =>
+    label(tok) + rangeText(pr.ranges?.[tok], tok.startsWith("prio:") || tok.startsWith("sci:"));
+  const summary = (pr: OrgProfile) => [
+    ...([["all", rp.all], ["any", rp.any], ["none", rp.none]] as [ListKey, string][])
+      .filter(([k]) => pr[k].length)
+      .map(([k, title]) => `${title}: ${pr[k].map(withRange(pr)).join(", ")}`),
+    ...(pr.tiers?.length ? [`${p.size} ${pr.tiers.map(stars).join(" / ")}`] : []),
+  ].join(" · ");
   const active = data.profiles.filter((x) => x.enabled).length;
 
   return (

@@ -150,6 +150,11 @@ def normalize(p, thresholds=None):
         # come l'allerta generica: org che posso pagare e che qualcuno puo' tenere
         "affordableOnly": p.get("affordableOnly") is not False,
         "holdableOnly": p.get("holdableOnly") is not False,
+        # limiti per condizione, nelle unita' mostrate (attributi e rendite come
+        # sono, priorita' e ricerca in %): {"attr:persuasion": {"min": 2, "max": 3}}
+        "ranges": _org_ranges(p.get("ranges"), tokens("all") + tokens("any") + tokens("none")),
+        # dimensione dell'org in stelle (tier 1-3); vuota = qualunque
+        "tiers": sorted({int(x) for x in p.get("tiers") or [] if str(x) in ("1", "2", "3")}),
     }
 
 
@@ -286,6 +291,67 @@ def matches(snap, profiles, thresholds):
 # priorita' nazionali e allo spazio (estrazione compresa), ricerca per
 # categoria, rendite, missioni. Una condizione vale se il valore e' > 0.
 
+def _org_ranges(raw, tokens):
+    """Solo i limiti delle condizioni presenti (non le missioni), numeri veri."""
+    out = {}
+    for tok in tokens:
+        if tok.startswith("mission:"):
+            continue
+        r = (raw or {}).get(tok) if isinstance(raw, dict) else None
+        if not isinstance(r, dict):
+            continue
+        lim = {}
+        for k in ("min", "max"):
+            try:
+                if r.get(k) not in (None, ""):
+                    lim[k] = float(r[k])
+            except (TypeError, ValueError):
+                pass
+        if lim:
+            out[tok] = lim
+    return out
+
+
+# campi del template delle org per ogni condizione: il valore di un'org e' fra
+# base e base + rand (verificato su 2754 org di quattro salvataggi: 8448 valori,
+# nessuno fuori). I posti progetto li da' la dimensione (1-3 nei salvataggi).
+_ORG_FIELDS = {"attr": {a: a[0].lower() + a[1:] for a in ATTRS},
+               "inc": {"money": "incomeMoney", "influence": "incomeInfluence", "ops": "incomeOps",
+                       "research": "incomeResearch", "boost": "incomeBoost",
+                       "missionControl": "incomeMissionControl"}}
+
+
+def org_value_ranges():
+    """{condizione: [min, max]} che un'org puo' avere, dalle org casuali e da
+    quelle predefinite del gioco, nelle unita' mostrate."""
+    from .council import ORG_BONUS_FIELDS
+    orgs = gamedata.templates()["orgs"].values()
+    cap = lambda s: s[0].upper() + s[1:]
+
+    def span(field, scale=1):
+        vals = [(t.get(field) or 0, (t.get(field) or 0) + (t.get("rand" + cap(field)) or 0))
+                for t in orgs if t.get(field) and (t.get("chance" + cap(field)) is None
+                                                   or t.get("chance" + cap(field)) > 0)]
+        if not vals:
+            return None
+        return [round(min(a for a, _ in vals) * scale, 1), round(max(b for _, b in vals) * scale, 1)]
+
+    out = {}
+    for a, f in _ORG_FIELDS["attr"].items():
+        out["attr:" + a] = span(f)
+    for f in ORG_BONUS_FIELDS:
+        out["prio:" + f] = span(f, 100)
+    for k, f in _ORG_FIELDS["inc"].items():
+        out["inc:" + k] = span(f)
+    out["inc:projects"] = [1, 3]
+    sci = [b["bonus"] for t in orgs for b in t.get("techBonuses") or [] if b.get("bonus")]
+    cats = {b["category"] for t in orgs for b in t.get("techBonuses") or [] if b.get("category")}
+    for c in cats:
+        vs = [b["bonus"] for t in orgs for b in t.get("techBonuses") or [] if b.get("category") == c and b.get("bonus")]
+        out["sci:" + c] = [round(min(vs) * 100, 1), round(max(vs) * 100, 1)]
+    return {k: v for k, v in out.items() if v}
+
+
 def org_options(lang):
     """Cosa si puo' scegliere per le org, coi nomi del gioco dove ci sono."""
     from .council import ORG_BONUS_FIELDS
@@ -307,6 +373,7 @@ def org_options(lang):
                        for m in gamedata.player_missions()), key=lambda x: x["name"].lower())
     attrs = [{"id": a, "name": gamedata.resource_name(lang, a)} for a in ATTRS]
     return {"attributes": attrs, "priorities": prio, "science": sci, "income": inc,
+            "ranges": org_value_ranges(),
             "missions": missions}
 
 
@@ -323,15 +390,32 @@ def _org_value(o, token):
     return 1 if ident in (o.get("missionsGranted") or []) else 0
 
 
+def _shown(o, token):
+    """Il valore di una condizione nelle unita' mostrate (priorita' e ricerca in %)."""
+    v = _org_value(o, token)
+    return v * 100 if token.split(":", 1)[0] in ("prio", "sci") else v
+
+
 def org_match(o, p):
-    """Le condizioni soddisfatte, o None se l'org non corrisponde al profilo."""
+    """Le condizioni soddisfatte, o None se l'org non corrisponde al profilo.
+    Senza limiti una condizione vale se l'org da' quella cosa (> 0); coi
+    limiti, se il valore sta fra minimo e massimo (0 se non la da')."""
     if not p.get("all") and not p.get("any"):
         return None
     if p.get("affordableOnly") and not o.get("affordable"):
         return None
     if p.get("holdableOnly") and not o.get("eligible"):
         return None
-    has = lambda x: _org_value(o, x) > 0
+    if p.get("tiers") and o.get("tier") not in p["tiers"]:
+        return None
+    ranges = p.get("ranges") or {}
+
+    def has(x):
+        r = ranges.get(x)
+        v = _shown(o, x)
+        if not r:
+            return v > 0
+        return (r.get("min") is None or v >= r["min"] - 1e-9) and (r.get("max") is None or v <= r["max"] + 1e-9)
     if not all(has(x) for x in p["all"]):
         return None
     met_any = [x for x in p["any"] if has(x)]
