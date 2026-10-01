@@ -478,6 +478,11 @@ function Orgs({ data }: { data: Mining }) {
   );
 }
 
+/** sotto il tetto neutro, al tetto verde, poco sopra ambra, da 5 in su rosso:
+ *  il controllo missioni in piu' cresce col quadrato dell'eccedenza */
+const mineTone = (over: number) =>
+  over < 0 ? "accent" : over === 0 ? "mine" : over < 5 ? "warn" : "bad";
+
 export default function MiningPage() {
   const { t, game, live } = useSettings();
   const { data, error, reload } = useApi<Mining>(`/api/mining?lang=${game}`, [live.version, game]);
@@ -502,7 +507,7 @@ export default function MiningPage() {
         <div className="flex flex-wrap gap-2">
           {data.mines.free != null && (
             <Tip title={m.statMines} width={320} content={<p className="m-0">{m.statMinesHint}</p>}>
-              <Stat label={m.statMines} tone={data.mines.active < data.mines.free ? "warn" : data.mines.active > data.mines.free ? "bad" : "mine"}
+              <Stat label={m.statMines} tone={mineTone(data.mines.active - data.mines.free)}
                 value={`${data.mines.active}/${data.mines.free}`} />
             </Tip>
           )}
