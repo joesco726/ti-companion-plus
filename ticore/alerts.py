@@ -21,6 +21,11 @@ _INCOME_RESOURCE = {
 # soglie: sotto queste una risorsa blocca le operazioni
 LOW = {"Influence": 15, "Operations": 10, "Money": 50}
 
+# nazioni tutte tue (almeno OPINION_MIN_CP punti) dove il sostegno alla tua
+# fazione e' sotto OPINION_LOW: frazione 0-1, come nel salvataggio
+OPINION_LOW = 0.10
+OPINION_MIN_CP = 3
+
 
 def _lang(snap):
     """Lingua di gioco dello snapshot: i testi escono nella sua lingua."""
@@ -125,6 +130,24 @@ def control_points(cur, prev):
     return out
 
 
+def low_opinion(cur, prev):
+    """Nazioni che controlli per intero ma dove l'opinione pubblica non ti
+    sostiene: lo stato attuale, non un confronto col salvataggio precedente."""
+    out = []
+    for n in cur.get("nations", []):
+        top = n.get("topOpinion")       # assente negli snapshot archiviati prima
+        if (not top or n["cp"] < OPINION_MIN_CP or n["myCP"] != n["cp"]
+                or n["support"] >= OPINION_LOW):
+            continue
+        out.append(_alert(
+            "lowopinion:%s" % n["id"], "warning",
+            t("alert.lowopinion.title", _lang(cur), n["name"]),
+            t("alert.lowopinion.detail", _lang(cur), n["cp"], n["support"] * 100,
+              top["name"], top["share"] * 100),
+            tab="nations", nation=n["id"]))
+    return out
+
+
 def council_watch(cur, prev):
     out = []
     team = (cur.get("council") or {}).get("team", [])
@@ -216,7 +239,7 @@ def structural(cur, prev):
     return out
 
 
-RULES = [stalled_projects, low_resources, control_points, council_watch,
+RULES = [stalled_projects, low_resources, control_points, low_opinion, council_watch,
          alien_watch, opportunities, structural]
 
 

@@ -91,6 +91,20 @@ def nations(g, lang="ita"):
             since = "%02d/%04d" % (m, y)
 
         op = _now(n.get("historyPublicOpinion")) or n.get("publicOpinion") or {}
+        op = op if isinstance(op, dict) else {}
+        # l'opinione pubblica ha per chiave l'ideologia (Resist = ResistCouncil);
+        # «Undecided» non e' una fazione ma puo' essere la quota piu' alta
+        ranked = sorted(op.items(), key=lambda kv: -kv[1])
+        top = None
+        if ranked:
+            k, v = ranked[0]
+            if k == "Undecided":
+                top = {"id": k, "share": v, "name": gamedata.loc(
+                    lang, "TIFactionIdeologyTemplate", "undecided", "public", k)}
+            else:
+                f = next((x for x in g.factions.values()
+                          if x.get("templateName") == k + "Council"), None)
+                top = {"id": k + "Council", "name": nm.faction(f) or k, "share": v}
         out.append({
             "id": nation_id(n),              # chiave stabile: il nome cambia con la lingua
             "name": name,
@@ -108,7 +122,8 @@ def nations(g, lang="ita"):
             "cohesion": n.get("cohesion") or 0,
             "unrest": n.get("unrest") or 0,
             "inequality": n.get("inequality") or 0,
-            "support": op.get(me_key, 0) if isinstance(op, dict) else 0,
+            "support": op.get(me_key, 0),
+            "topOpinion": top,           # {id, name, share}: la fazione piu' sostenuta
             "difficulty": n.get("missionDifficultyEconomyScore") or 0,
             "spaceFunding": n.get("spaceFunding_year") or 0,
             "space": bool(n.get("spaceFlightProgram")),

@@ -36,6 +36,7 @@ KEEP_PREFIXES = (
     "TIProjectTemplate.displayName.",
     "TITechTemplate.displayName.",
     "TIFactionTemplate.displayName.",
+    "TIFactionIdeologyTemplate.undecided.public",   # «Indecisi» nell'opinione pubblica
     # nomi di nazioni e regioni: il salvataggio li ha nella lingua del gioco,
     # names.py li ritraduce (una nazione puo' usare anche il nome "di unione")
     "TINationTemplate.displayName.",
