@@ -6,7 +6,7 @@ cosi' il frontend puo' non ripetere una notifica gia' mostrata.
 """
 
 from . import gamedata, profiles as recruit_profiles, watch as body_watch_rules
-from .texts import t
+from .texts import TEXTS, t
 
 SEVERITY_ORDER = {"critical": 0, "warning": 1, "info": 2}
 
@@ -269,6 +269,10 @@ def assault_carriers(cur, prev):
     """Flotta aliena visibile con portaerei d'assalto che arriva in orbita
     terrestre entro CARRIER_DAYS giorni (fleets.py)."""
     lang = _lang(cur)
+    # dopo il primo sbarco visto, il motto della fazione in fondo al dettaglio
+    ctx = cur.get("carrierContext") or {}
+    key = "alert.carrier.motto." + str(ctx.get("faction"))
+    motto = (" " + t(key, lang)) if ctx.get("landed") and key in TEXTS else ""
     out = []
     for f in cur.get("carriers") or []:
         if f["days"] > CARRIER_DAYS:
@@ -277,7 +281,7 @@ def assault_carriers(cur, prev):
                           t("alert.carrier.title", lang,
                             t("alert.carrier." + next(k for d, k in CARRIER_TAGS if f["days"] <= d), lang),
                             f["name"], round(f["days"])),
-                          t("alert.carrier.detail", lang, f["arrival"], f["carriers"], f["ships"]),
+                          t("alert.carrier.detail", lang, f["arrival"], f["carriers"], f["ships"]) + motto,
                           tab="space"))
     return out
 

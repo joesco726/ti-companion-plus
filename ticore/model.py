@@ -702,7 +702,11 @@ def snapshot(g, lang="ita"):
         "launch": mining.launch_bodies(g, lang),
         # rete delle miniere: attive contro quelle che non costano controllo missioni
         "mines": mining.mine_network(g),
-        # flotte aliene con portaerei d'assalto in viaggio verso la Terra
+        # flotte aliene con portaerei d'assalto in viaggio verso la Terra, e se
+        # il giocatore ne ha gia' visto sbarcare una (pietra miliare del gioco,
+        # con notifica a tutti: allora l'allerta aggiunge il motto della fazione)
+        "carrierContext": {"faction": g.me.get("templateName"),
+                           "landed": fleets.LANDED_MILESTONE in (g.me.get("milestones") or [])},
         "carriers": fleets.incoming_carriers(
             g, gamedata.templates().get("utilityModules"),
             fleets._dt(next(iter(g.state("TITimeState").values()), {}).get("currentDateTime"))),
