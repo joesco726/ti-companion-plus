@@ -26,6 +26,9 @@ export interface Org {
   bonuses?: Record<string, number>;
   /** ricerca per categoria (Energy, SpaceScience...): frazione */
   techBonuses?: Record<string, number>;
+  /** nomi da mostrare per bonus e ricerca, nella lingua del gioco */
+  bonusNames?: Record<string, string>;
+  techNames?: Record<string, string>;
   requiresNationality: boolean;
   requiredTraits: string[];
   prohibitedTraits: string[];

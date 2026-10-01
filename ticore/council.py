@@ -77,6 +77,14 @@ def org_view(g, o, lang="ita"):
         # ricerca per categoria: fissa nel template, non tirata
         "techBonuses": {b["category"]: b["bonus"] for b in tpl.get("techBonuses") or []
                         if b.get("category") and b.get("bonus")},
+        # i nomi da mostrare accanto alle icone, dalla localizzazione del gioco
+        # (estrazione e programmi spaziali non hanno una priorita' col loro nome)
+        "bonusNames": {f: (gamedata.priority_name(lang, ORG_BONUS_FIELDS[f]) if ORG_BONUS_FIELDS[f]
+                           else texts.t("org.mining" if f == "miningBonus" else "org.spaceflight", lang))
+                       for f in ORG_BONUS_FIELDS if o.get(f)},
+        "techNames": {b["category"]: gamedata.strings(lang).get(
+                          "UI.Science.Category.%s" % b["category"], b["category"])
+                      for b in tpl.get("techBonuses") or [] if b.get("category") and b.get("bonus")},
         "missionsGranted": tpl.get("missionsGrantedNames") or [],
         "requiresNationality": bool(tpl.get("requiresNationality")),
         "requiredTraits": tpl.get("requiredOwnerTraits") or [],
