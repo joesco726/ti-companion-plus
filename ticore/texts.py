@@ -92,7 +92,7 @@ TEXTS = {
     "alert.carrier.motto.CooperateCouncil": {"it": "RESTIAMO UNITI", "en": "STAND TOGETHER"},
     "alert.carrier.motto.ExploitCouncil": {"it": "METTETE AL SICURO I NOSTRI BENI", "en": "SECURE OUR ASSETS"},
     "alert.carrier.motto.EscapeCouncil": {"it": "SEMPRE AVANTI", "en": "KEEP MOVING FORWARD"},
-    "alert.carrier.motto.AppeaseCouncil": {"it": "MANTENERE LA POSIZIONE — NON INGAGGIARE", "en": "HOLD THE LINE — DO NOT ENGAGE"},
+    "alert.carrier.motto.AppeaseCouncil": {"it": "PRESERVARE LA PACE", "en": "PRESERVE THE PEACE"},
     "alert.carrier.motto.SubmitCouncil": {"it": "L'ASCESA CI ATTENDE", "en": "ASCENSION AWAITS"},
     "alert.carrier.priority": {"it": "PRIORITÀ", "en": "PRIORITY"},
     "alert.carrier.immediate": {"it": "IMMEDIATO", "en": "IMMEDIATE"},
