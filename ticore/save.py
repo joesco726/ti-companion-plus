@@ -7,6 +7,7 @@ lista di {"Key":{"value":id}, "Value":{...}}.
 
 import gzip
 import json
+import re
 import os
 import time
 
@@ -37,8 +38,33 @@ def read_save(path, retries=6, delay=0.4):
     raise SaveLocked(t("err.saveLocked", None, os.path.basename(path), last))
 
 
+_OBJ = r"(\{[^{}]*\})"
+
+
+def peek(path):
+    """(campagna, data) di un salvataggio senza analizzarlo tutto: stesse
+    chiavi di Game.campaign_key()/date_key(), cercate nel testo. Serve a
+    scorrere la cartella dei salvataggi (tanti file, quasi tutti di altre
+    partite) senza il json.loads di ognuno. None se non si trovano."""
+    text = read_save(path)
+    m = re.search(r'"realWorldCampaignStart"\s*:\s*' + _OBJ, text)
+    i = text.find('"PavonisInteractive.TerraInvicta.TITimeState"')
+    d = re.compile(r'"currentDateTime"\s*:\s*' + _OBJ).search(text, max(i, 0)) if i >= 0 else None
+    if not m or not d:
+        return None
+    try:
+        t, n = json.loads(m.group(1)), json.loads(d.group(1))
+        return ("%04d%02d%02dT%02d%02d%02d" % (t["year"], t["month"], t["day"],
+                                               t["hour"], t["minute"], t["second"]),
+                "%04d-%02d-%02d" % (n["year"], n["month"], n["day"]))
+    except (ValueError, KeyError, TypeError):
+        return None
+
+
 class Game:
-    def __init__(self, path):
+    def __init__(self, path, activate=True):
+        """`activate=False`: non cambiare lo scenario dei dati del gioco (per
+        leggere un salvataggio di passaggio senza toccare la partita aperta)."""
         self.path = path
         self.mtime = os.path.getmtime(path)
         self.gs = json.loads(read_save(path))["gamestates"]
@@ -48,8 +74,9 @@ class Game:
         # scenario dei DLC (es. BrokenEarthScenario): i suoi template e testi
         # valgono per questa partita
         self.scenario = self.meta.get("scenarioDataname") or None
-        from . import gamedata
-        gamedata.use_scenario(self.scenario)
+        if activate:
+            from . import gamedata
+            gamedata.use_scenario(self.scenario)
         self.nations = self.state("TINationState")
         self.regions = self.state("TIRegionState")
         self.councilors = self.state("TICouncilorState")

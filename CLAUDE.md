@@ -212,6 +212,10 @@ con `isAI == false`.
   coppia. Il gioco **non azzera gli slot di autosave** quando ricominci: `Autosave3.gz`
   può appartenere alla campagna precedente. Per capire di che partita è un `.gz`,
   leggere quel campo, non il nome del file né la data di gioco.
+  Per scorrere la cartella (anche centinaia di file di partite passate): `save.peek()`
+  legge solo campagna e data dal testo, l'indice `saveIndex` nel database le ricorda per
+  (dimensione, mtime), e i file con mtime precedente a `realWorldCampaignStart` (meno un
+  giorno) non si aprono: non possono essere della partita.
 - **Rese dei siti**: il salvataggio ha la resa vera di ogni sito, ma il gioco la mostra
   solo dopo la sonda (`Prospected`: intel sul corpo ≥ 1,0; 0,1 = sonda in viaggio).
   Prima la lista dei siti (pannello del corpo, anche se non esplorabile) mostra

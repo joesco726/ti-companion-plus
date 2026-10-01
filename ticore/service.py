@@ -15,7 +15,7 @@ import re
 from urllib.parse import unquote
 
 from . import (Game, SaveLocked, alerts, factions, gamedata, load, missions, profiles,
-               mining, model, paths, portable, presets, snapshot, space, store, techs, texts,
+               mining, model, paths, portable, presets, save, snapshot, space, store, techs, texts,
                watch)
 from .texts import t
 
@@ -25,6 +25,18 @@ class ServiceError(Exception):
         super().__init__(message)
         self.status = status
         self.message = message
+
+
+MAX_PEEKS = 40                      # file nuovi da leggere per richiesta, al massimo
+
+
+def _campaign_epoch(key):
+    """«20260923T001452» (realWorldCampaignStart) -> secondi epoch, ora locale."""
+    import time
+    try:
+        return time.mktime(time.strptime(key, "%Y%m%dT%H%M%S"))
+    except (TypeError, ValueError):
+        return None
 
 
 class Service:
@@ -157,25 +169,50 @@ class Service:
             return self._rprev or prev
         self._rprev_key, self._rprev = key, None
         try:
-            for _, path in paths.list_saves():
-                if os.path.basename(path) == cur.get("save"):
-                    continue
-                try:
-                    g = Game(path)
-                except Exception:
-                    continue
-                if g.campaign_key() != cur.get("campaignStart") or g.date_key() >= cur.get("dateKey", ""):
-                    continue
+            for path in self._earlier_saves(cur):
+                g = Game(path, activate=False)
                 self._rprev = {"date": g.meta.get("gameTimeString", ""), "dateKey": g.date_key(),
                                "research": model.research(g, self.lang)}
                 break
         except Exception:
             pass                           # nel browser non c'e' una cartella da leggere
-        finally:
-            # un salvataggio di un'altra partita puo' aver cambiato scenario
-            if self.game is not None:
-                gamedata.use_scenario(self.game.scenario)
         return self._rprev or prev
+
+    def _earlier_saves(self, cur):
+        """Salvataggi della stessa partita con una data precedente, dal piu'
+        recente. Campagna e data di ogni file con save.peek, ricordate nel
+        database per (dimensione, mtime): con una partita nuova la cartella e'
+        piena di salvataggi di altre partite, e aprirli tutti a ogni autosave
+        bloccava le altre richieste per decine di secondi."""
+        index = store.get_setting(self.con, "saveIndex") or {}
+        seen, changed, out, peeked = {}, False, [], 0
+        # un salvataggio della partita e' scritto dopo che la partita e' nata
+        # (realWorldCampaignStart, ora reale): i file piu' vecchi, spesso
+        # centinaia di partite passate, non si aprono nemmeno. Un giorno di
+        # margine per il fuso orario.
+        born = _campaign_epoch(cur.get("campaignStart"))
+        for mtime, path in paths.list_saves():
+            name = os.path.basename(path)
+            if name == cur.get("save") or (born and mtime < born - 86400):
+                continue
+            stamp = [os.path.getsize(path), mtime]
+            hit = index.get(path)
+            if not hit or hit[:2] != stamp:
+                if peeked >= MAX_PEEKS:
+                    continue                # il resto alla prossima richiesta
+                peeked += 1
+                try:
+                    pk = save.peek(path)
+                except Exception:
+                    pk = None
+                hit = stamp + (list(pk) if pk else [None, None])
+                changed = True
+            seen[path] = hit
+            if hit[2] == cur.get("campaignStart") and hit[3] and hit[3] < cur.get("dateKey", ""):
+                out.append((hit[3], path))
+        if changed or len(seen) != len(index):
+            store.set_setting(self.con, "saveIndex", seen)
+        return [p for _, p in sorted(out, reverse=True)]
 
     def languages(self):
         return {"current": self.lang,
