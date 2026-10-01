@@ -700,6 +700,8 @@ def snapshot(g, lang="ita"):
         "alienSites": alien_sites(g, lang),
         # finestre di lancio e siti liberi dei corpi: le allerte dei corpi sorvegliati
         "launch": mining.launch_bodies(g, lang),
+        # rete delle miniere: attive contro quelle che non costano controllo missioni
+        "mines": mining.mine_network(g),
         # la serie e' dal piu' recente (vedi _chrono): conta solo oggi. Con
         # any() l'allerta restava accesa per 32 giorni dopo essere rientrati
         "cpCapOverage": bool((g.me.get("history_CPCapOverageByDay") or [0])[0]),

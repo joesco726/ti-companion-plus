@@ -248,8 +248,20 @@ def structural(cur, prev):
     return out
 
 
+def mine_network(cur, prev):
+    """Meno miniere attive di quante la rete ne regge senza controllo missioni
+    in piu' (mining.mine_network)."""
+    m = cur.get("mines") or {}
+    if m.get("free") is None or m["active"] >= m["free"]:
+        return []
+    lang = _lang(cur)
+    return [_alert("minenetwork", "info", t("alert.mines.title", lang, m["active"], m["free"]),
+                   t("alert.mines.detail", lang, m["free"] - m["active"], m["built"] - m["active"]),
+                   tab="space")]
+
+
 RULES = [stalled_projects, low_resources, control_points, low_opinion, council_watch,
-         alien_watch, opportunities, structural]
+         alien_watch, opportunities, structural, mine_network]
 
 
 def recruit_watch(cur, profiles):

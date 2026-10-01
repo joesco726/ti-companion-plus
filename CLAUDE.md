@@ -232,6 +232,10 @@ con `isAI == false`.
   generatore: somma delle risorse con media positiva nel 10% più alto della classe sullo
   stesso corpo. Verificato: sui 298 siti esplorati di una partita i percentili cadono
   uniformi (≈30 per decile).
+- **Rete di miniere** (IL di `TIFactionState`): miniere attive (modulo 1 del settore 0
+  con `mine`, completato, alimentato) contro `spaceMineFreebies` (assente dal JSON: 0) +
+  effetti `MCFreeSpaceMineNetwork`. Oltre, controllo missioni in più = eccedenza²/2. Il
+  gioco lo mostra solo nel suggerimento del controllo missioni; verificato 17/24 a schermo.
 - **Bonus spaziali delle org** (`TIOrgState.description`): `spaceDevBonus` →
   Finanziamenti; `spaceflightBonus` → Programma spaziale, Capacità di lancio,
   exovelivoli; `MCBonus` → Controllo missioni. Acquisizione ostile può colpire

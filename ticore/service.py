@@ -244,6 +244,7 @@ class Service:
         out["launch"] = mining.launch_bodies(self.game, lang)
         out["watch"] = self._body_watch()
         out["boost"] = (self.snapshot.get("resources") or {}).get("Boost") or 0
+        out["mines"] = mining.mine_network(self.game)
         return out
 
     def _body_watch(self):

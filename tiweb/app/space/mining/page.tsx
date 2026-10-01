@@ -40,6 +40,7 @@ interface Mining {
   launch: LaunchBody[];
   watch: Watch;
   boost: number;
+  mines: { active: number; built: number; free: number | null };
   resources: Res[];
   sites: Site[];
   prospectedBodies: number;
@@ -499,6 +500,12 @@ export default function MiningPage() {
         }>
         <p className="text-faint text-[11.5px] mb-3">{m.sub}</p>
         <div className="flex flex-wrap gap-2">
+          {data.mines.free != null && (
+            <Tip title={m.statMines} width={320} content={<p className="m-0">{m.statMinesHint}</p>}>
+              <Stat label={m.statMines} tone={data.mines.active < data.mines.free ? "warn" : data.mines.active > data.mines.free ? "bad" : "mine"}
+                value={`${data.mines.active}/${data.mines.free}`} />
+            </Tip>
+          )}
           <Stat label={m.statProspected} value={data.prospectedBodies} />
           <Stat label={m.statReachable} value={`${reachable}/${data.sites.length}`} />
           <Stat label={m.statBonus} tone={data.orgMiningBonus ? "mine" : "accent"}
