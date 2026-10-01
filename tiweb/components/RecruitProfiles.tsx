@@ -4,7 +4,12 @@
    Ogni profilo ha condizioni «tutte», «almeno una» e «nessuna» su tratti,
    missioni e attributi alti/bassi; quando un candidato corrisponde arriva
    un'allerta. Le soglie degli attributi valgono per tutti i profili e stanno
-   in fondo. */
+   in fondo.
+
+   Le condizioni si scelgono da una griglia di etichette, non da menu a
+   tendina: un clic fa girare lo stato (spenta -> ha tutte -> almeno una ->
+   nessuna -> spenta). I tratti sono divisi nelle sezioni del wiki ufficiale,
+   che sono il `grouping` dei template del gioco. */
 
 import { useState } from "react";
 import { api } from "@/lib/api";
@@ -25,7 +30,7 @@ export interface Profile {
   newMissionsOnly: boolean;
 }
 
-interface Option { id: string; name: string }
+interface Option { id: string; name: string; group?: number | null }
 
 export interface ProfilesData {
   profiles: Profile[];
@@ -56,42 +61,119 @@ function useLabel(data: ProfilesData) {
   };
 }
 
-/** Una lista di condizioni: le scelte come etichette, e un menu per aggiungerne. */
-function Conditions({ title, hint, value, onChange, data }: {
-  title: string; hint: string; value: string[]; onChange: (v: string[]) => void;
-  data: ProfilesData;
+type State = "off" | ListKey;
+const NEXT: Record<State, State> = { off: "all", all: "any", any: "none", none: "off" };
+const MARK: Record<State, string> = { off: "", all: "✓ ", any: "◇ ", none: "✕ " };
+const TONE: Record<State, string> = {
+  off: "border-edge text-dim hover:text-ink hover:border-edge-lit",
+  all: "border-good text-good bg-good/10",
+  // non l'accent: segue il colore della fazione, e per alcune e' rosso come «nessuna»
+  any: "border-other text-other bg-other/10",
+  none: "border-bad text-bad bg-bad/10",
+};
+/** ordine delle sezioni dei tratti: quello del wiki, poi i tratti senza gruppo */
+const GROUP_ORDER = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, null];
+type Tab = "traits" | "missions" | "attributes";
+
+/** Tutte le condizioni del profilo in una griglia: ogni etichetta e' spenta o
+ *  sta in una delle tre liste, e il clic la porta allo stato dopo. */
+function ConditionGrid({ d, setD, data }: {
+  d: Profile; setD: (f: (x: Profile) => Profile) => void; data: ProfilesData;
 }) {
   const { t } = useSettings();
   const p = t.recruit.profiles;
   const label = useLabel(data);
-  const add = (token: string) => { if (token && !value.includes(token)) onChange([...value, token]); };
+  const [tab, setTab] = useState<Tab>("traits");
+  const [filter, setFilter] = useState("");
+
+  const stateOf = (tok: string): State =>
+    d.all.includes(tok) ? "all" : d.any.includes(tok) ? "any" : d.none.includes(tok) ? "none" : "off";
+  const setState = (tok: string, to: State) => setD((x) => {
+    const y = { ...x, all: x.all.filter((v) => v !== tok), any: x.any.filter((v) => v !== tok),
+                none: x.none.filter((v) => v !== tok) };
+    if (to !== "off") y[to] = [...y[to], tok];
+    return y;
+  });
+
+  const f = filter.trim().toLowerCase();
+  const shown = (name: string) => !f || name.toLowerCase().includes(f);
+  const chip = (tok: string, name: string) => {
+    const st = stateOf(tok);
+    return (
+      <button key={tok} onClick={() => setState(tok, NEXT[st])} title={p.legend}
+        className={`px-1.5 py-[1px] border text-[12px] ${TONE[st]}`}>
+        {MARK[st]}{name}
+      </button>
+    );
+  };
+  const count = (kinds: string[]) => [...d.all, ...d.any, ...d.none]
+    .filter((x) => kinds.includes(x.split(":")[0])).length;
+
+  const groups = GROUP_ORDER.map((g) => ({
+    g, items: data.options.traits.filter((o) => (o.group ?? null) === g && shown(o.name)),
+  })).filter((x) => x.items.length);
+  const groupName = (g: number | null) =>
+    (p.groups as Record<string, string>)[g == null ? "none" : String(g)] ?? `${p.group} ${g}`;
+
+  const tabs: [Tab, string, number][] = [
+    ["traits", p.traits, count(["trait"])],
+    ["missions", p.missions, count(["mission"])],
+    ["attributes", p.attributes, count(["high", "low"])],
+  ];
   return (
-    <div className="space-y-1">
-      <div className="text-[12px]"><span className="font-semibold">{title}</span>
-        <span className="text-faint"> · {hint}</span></div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {value.map((tok) => (
-          <span key={tok} className="inline-flex items-center gap-1 border border-edge px-1.5 py-[1px] text-[12px]">
-            {label(tok)}
-            <button onClick={() => onChange(value.filter((x) => x !== tok))}
-              className="text-dim hover:text-bad" aria-label={p.remove}>×</button>
+    <div className="space-y-2">
+      {/* il profilo per come e' ora: le tre liste, togliendo con la × */}
+      {(["all", "any", "none"] as ListKey[]).map((k) => (
+        <div key={k} className="flex flex-wrap items-baseline gap-1.5 text-[12px]">
+          <span className={`font-semibold w-28 shrink-0 ${TONE[k].split(" ")[1]}`}>
+            {MARK[k]}{p[k]}
           </span>
+          {d[k].length ? d[k].map((tok) => (
+            <span key={tok} className="inline-flex items-center gap-1 border border-edge px-1.5 py-[1px]">
+              {label(tok)}
+              <button onClick={() => setState(tok, "off")} className="text-dim hover:text-bad"
+                aria-label={p.remove}>×</button>
+            </span>
+          )) : <span className="text-faint">{p[`${k}Hint` as "allHint"]}</span>}
+        </div>
+      ))}
+
+      <div className="flex flex-wrap items-center gap-2 border-t border-edge pt-2">
+        {tabs.map(([k, name, n]) => (
+          <button key={k} onClick={() => setTab(k)}
+            className={`px-2 py-[2px] border text-[12px] ${tab === k
+              ? "border-accent text-accent bg-accent/10" : "border-edge text-dim hover:text-ink"}`}>
+            {name}{n ? ` (${n})` : ""}
+          </button>
         ))}
-        <select value="" onChange={(e) => add(e.target.value)} className="text-[12px]">
-          <option value="">{p.add}</option>
-          <optgroup label={p.traits}>
-            {data.options.traits.map((o) => <option key={o.id} value={`trait:${o.id}`}>{o.name}</option>)}
-          </optgroup>
-          <optgroup label={p.missions}>
-            {data.options.missions.map((o) => <option key={o.id} value={`mission:${o.id}`}>{o.name}</option>)}
-          </optgroup>
-          <optgroup label={p.high.replace("{n}", String(data.thresholds.high))}>
-            {data.options.attributes.map((o) => <option key={o.id} value={`high:${o.id}`}>{o.name} ≥ {data.thresholds.high}</option>)}
-          </optgroup>
-          <optgroup label={p.low.replace("{n}", String(data.thresholds.low))}>
-            {data.options.attributes.map((o) => <option key={o.id} value={`low:${o.id}`}>{o.name} ≤ {data.thresholds.low}</option>)}
-          </optgroup>
-        </select>
+        <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={p.filter}
+          className="bg-transparent border border-edge px-1.5 py-[2px] text-[12px] w-48" />
+        <span className="text-faint text-[11.5px]">{p.legend}</span>
+      </div>
+
+      <div className="max-h-[22rem] overflow-y-auto pr-1 space-y-2">
+        {tab === "traits" && groups.map(({ g, items }) => (
+          <div key={String(g)}>
+            <div className="text-dim text-[11px] uppercase tracking-[.06em] mb-1">{groupName(g)}</div>
+            <div className="flex flex-wrap gap-1.5">{items.map((o) => chip(`trait:${o.id}`, o.name))}</div>
+          </div>
+        ))}
+        {tab === "missions" && (
+          <div className="flex flex-wrap gap-1.5">
+            {data.options.missions.filter((o) => shown(o.name)).map((o) => chip(`mission:${o.id}`, o.name))}
+          </div>
+        )}
+        {tab === "attributes" && (
+          <div className="grid gap-1.5 [grid-template-columns:auto_auto_1fr] items-center">
+            {data.options.attributes.filter((o) => shown(o.name)).map((o) => (
+              <div key={o.id} className="contents">
+                <span className="text-[12px] text-dim pr-2">{o.name}</span>
+                {chip(`high:${o.id}`, `${p.highShort} ≥ ${data.thresholds.high}`)}
+                <span>{chip(`low:${o.id}`, `${p.lowShort} ≤ ${data.thresholds.low}`)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -104,7 +186,6 @@ function Editor({ start, data, onSave, onCancel }: {
   const p = t.recruit.profiles;
   const [d, setD] = useState<Profile>(start);
   const [err, setErr] = useState<string | null>(null);
-  const set = (k: ListKey) => (v: string[]) => setD((x) => ({ ...x, [k]: v }));
   const empty = d.all.length === 0 && d.any.length === 0;
   return (
     <div className="border border-accent/50 bg-panel p-3 space-y-3">
@@ -119,15 +200,13 @@ function Editor({ start, data, onSave, onCancel }: {
             <option value="info">{p.severityInfo}</option>
           </select>
         </label>
+        <label className="flex items-center gap-1.5">
+          <input type="checkbox" checked={d.newMissionsOnly}
+            onChange={(e) => setD({ ...d, newMissionsOnly: e.target.checked })} />
+          {p.newOnly}
+        </label>
       </div>
-      <Conditions title={p.all} hint={p.allHint} value={d.all} onChange={set("all")} data={data} />
-      <Conditions title={p.any} hint={p.anyHint} value={d.any} onChange={set("any")} data={data} />
-      <Conditions title={p.none} hint={p.noneHint} value={d.none} onChange={set("none")} data={data} />
-      <label className="flex items-center gap-1.5 text-[12.5px]">
-        <input type="checkbox" checked={d.newMissionsOnly}
-          onChange={(e) => setD({ ...d, newMissionsOnly: e.target.checked })} />
-        {p.newOnly}
-      </label>
+      <ConditionGrid d={d} setD={setD} data={data} />
       {empty && <p className="text-warn text-[12px] m-0">{p.needCondition}</p>}
       {err && <p className="text-bad text-[12px] m-0">{err}</p>}
       <div className="flex gap-2">
