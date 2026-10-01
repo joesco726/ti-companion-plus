@@ -159,6 +159,8 @@ export interface Nation {
   unrest: number;
   inequality: number;
   support: number;
+  /** la fazione col sostegno piu' alto (Undecided escluso), quota 0-1 */
+  topOpinion: { id: string; name: string; share: number } | null;
   difficulty: number;
   spaceFunding: number;
   space: boolean;

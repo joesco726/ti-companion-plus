@@ -53,6 +53,13 @@ TEXTS = {
     "alert.contested.title": {"it": "Nuova fazione in %s", "en": "New faction in %s"},
     "alert.contested.detail": {"it": "%s è entrata in una nazione dove sei presente.",
                                "en": "%s entered a nation where you are present."},
+    "alert.lowopinion.title": {"it": "Opinione pubblica bassa: %s",
+                               "en": "Low public opinion: %s"},
+    "alert.lowopinion.detail": {
+        "it": "Tutti i %d punti di controllo sono tuoi, ma il sostegno alla tua fazione "
+              "è al %.1f%%. Prima nell'opinione pubblica: %s, al %.1f%%.",
+        "en": "All %d control points are yours, but support for your faction is "
+              "%.1f%%. Highest public opinion: %s, at %.1f%%."},
     "alert.loyalty.title": {"it": "Lealtà in calo: %s", "en": "Loyalty falling: %s"},
     "alert.loyalty.detail": {
         "it": "Apparente da %s a %s. Qualcuno potrebbe stare lavorando per portartelo via.",
