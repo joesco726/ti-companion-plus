@@ -140,16 +140,12 @@ class Game:
                 if c["value"] in self.cps]
 
     def game_date(self):
-        """(anno, mese, giorno) da TITimeState.currentDateTime.
-
-        `gameTimeString` dei metadati e' scritta nel formato di data di
-        Windows: GG/MM/AAAA su un PC italiano, ma «11/16/2125 12:00:00 PM»
-        (MM/GG/AAAA) su uno americano. La data strutturata non dipende dal PC;
-        la stringa resta come ripiego, letta GG/MM come prima."""
-        now = (next(iter(self.state("TITimeState").values()), {})
-               .get("currentDateTime") or {})
-        if now.get("year"):
-            return now["year"], now["month"], now["day"]
+        """(anno, mese, giorno) da `TITimeState.currentDateTime`. La stringa
+        dei metadati segue la lingua del sistema (16/01/2027, 7/1/2060 negli
+        Stati Uniti): resta solo come ripiego, letta come GG/MM/AAAA."""
+        t = next(iter(self.state("TITimeState").values()), {}).get("currentDateTime") or {}
+        if t.get("year"):
+            return t["year"], t.get("month") or 1, t.get("day") or 1
         try:
             d, m, y = [int(x) for x in
                        self.meta["gameTimeString"].split(" ")[0].split("/")]

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SpaceTabs } from "@/components/SpaceTabs";
+import { SpaceTabs } from "@/components/SubTabs";
 
 // la pagina e' "use client": il titolo della scheda sta qui
 export const metadata: Metadata = { title: "Space" };

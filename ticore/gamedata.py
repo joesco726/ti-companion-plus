@@ -38,6 +38,9 @@ _TEMPLATE_FILES = {
     "councilors": "TICouncilorTemplate.json",
     # moduli delle navi: quali sbarcano un esercito (fleets.py)
     "utilityModules": "TIUtilityModuleTemplate.json",
+    "regions": "TIRegionTemplate.json",
+    "mapRegions": "TIMapRegionTemplate.json",
+    "nations": "TINationTemplate.json",
 }
 
 
