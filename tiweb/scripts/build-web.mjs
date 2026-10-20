@@ -2,7 +2,7 @@
 // Uno script invece di `NEXT_PUBLIC_ENGINE=browser next build` perche' quella
 // sintassi non esiste in PowerShell ne' in cmd.
 import { spawnSync } from "node:child_process";
-import { copyFileSync, readdirSync, statSync } from "node:fs";
+import { copyFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +10,12 @@ import { fileURLToPath } from "node:url";
 // comando in una stringa sola: con shell e un array di argomenti Node emette
 // DEP0190 su stderr, e PowerShell con ErrorActionPreference=Stop lo prende
 // per un errore (deploy.ps1 si fermava li')
+// The route types `next dev` leaves in .next/dev/types are checked by the
+// build too: after a page is removed they still name it and the type check
+// fails. `next dev` writes them again on its next start.
+const here = dirname(fileURLToPath(import.meta.url));
+rmSync(join(here, "..", ".next", "dev", "types"), { recursive: true, force: true });
+
 const r = spawnSync("npm run build", {
   stdio: "inherit",
   shell: true,
@@ -22,7 +28,7 @@ if (r.status !== 0) process.exit(r.status ?? 1);
    pagina, e il prefetch non serve a niente. Si copia ogni file delle cartelle
    `__next.*` anche col nome piatto che il browser cerca, cosi' funziona su
    qualunque server statico senza regole di riscrittura. */
-const out = join(dirname(fileURLToPath(import.meta.url)), "..", "out");
+const out = join(here, "..", "out");
 let copied = 0;
 function walk(dir) {
   for (const name of readdirSync(dir)) {

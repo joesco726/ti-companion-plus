@@ -47,6 +47,7 @@ analisi, non un aimbot.
 ```powershell
 .\start.ps1          # API + interfaccia + browser
 .\start.ps1 -NoReload    # senza auto-reload dell'API
+.\deploy.ps1         # sito online: build statica + estratto dal gioco installato, su Cloudflare Pages
 ```
 
 L'API si riavvia da sola quando cambiano `ticore/` e `tiserver/` — non `tiweb/` (ci

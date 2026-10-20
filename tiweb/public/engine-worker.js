@@ -171,7 +171,7 @@ async function loadDemo() {
       if (!r.ok) throw new Error(`/demo/${file}: ${r.status}`);
       for (const n of py.FS.readdir("/saves")) if (n !== "." && n !== "..") py.FS.unlink(`/saves/${n}`);
       const dest = `/saves/${file}`;
-      py.FS.writeFile(dest, new Uint8Array(await r.arrayBuffer()));
+      py.FS.writeFile(dest, await gzipped(new Uint8Array(await r.arrayBuffer())));
       py.FS.utime(dest, mtime, mtime);
       service.pinned = dest;
       if (!service.reload(true)) throw new Error(`${file}: ${service.error}`);
@@ -183,6 +183,15 @@ async function loadDemo() {
   } catch (e) {
     status("error", String(e));
   }
+}
+
+/* Some static hosts (Cloudflare Pages among them) may serve a .gz with
+   Content-Encoding: gzip, and then fetch hands back the JSON already
+   unpacked. ticore reads saves with gzip.open, so it is packed again. */
+async function gzipped(bytes) {
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) return bytes;
+  const s = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
+  return new Uint8Array(await new Response(s).arrayBuffer());
 }
 
 // ------------------------------------------------------------ salvataggi
