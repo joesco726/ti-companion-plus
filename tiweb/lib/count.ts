@@ -15,6 +15,8 @@
    Solo il sito online: la copia locale e i bot che eseguono JavaScript non
    contano. */
 
+const COUNTER_ENABLED = false;
+
 export type CountEvent = "visit" | "use" | "demo";
 
 const BOTS = /bot|crawl|spider|slurp|Google-|GoogleOther|Lighthouse|HeadlessChrome|Chrome-Lighthouse/i;
@@ -28,6 +30,10 @@ function isoWeek(d: Date) {
 }
 
 export function count(e: CountEvent) {
+  // TI Companion Plus: off. The counter needs b4p3p's server (nginx logs /hit);
+  // Cloudflare Pages has nothing behind /hit, and our privacy text says "no
+  // tracking". COUNTER_ENABLED keeps his code intact for future merges.
+  if (!COUNTER_ENABLED) return;
   // NEXT_PUBLIC_ENGINE e non LOCKED_ENGINE: engine.ts importa questo modulo
   if (process.env.NEXT_PUBLIC_ENGINE !== "browser" || typeof window === "undefined") return;
   if (["localhost", "127.0.0.1"].includes(window.location.hostname)) return;
