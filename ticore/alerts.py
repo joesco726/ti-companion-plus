@@ -271,12 +271,10 @@ def assault_carriers(cur, profiles=None):
     """Flotta aliena visibile con portaerei d'assalto che arriva in orbita
     terrestre entro CARRIER_DAYS giorni (fleets.py)."""
     lang = _lang(cur)
-    # il motto della fazione in fondo al dettaglio: dopo il primo sbarco visto,
-    # o sempre se il giocatore l'ha chiesto (opzione «factionLines», spenta)
+    # il motto della fazione in fondo al dettaglio, fin dalla prima portaerei
     ctx = cur.get("carrierContext") or {}
-    lines = ((profiles or {}).get("alertOptions") or {}).get("factionLines")
     key = "alert.carrier.motto." + str(ctx.get("faction"))
-    motto = (" " + t(key, lang)) if (ctx.get("landed") or lines) and key in TEXTS else ""
+    motto = (" " + t(key, lang)) if key in TEXTS else ""
     out = []
     for f in cur.get("carriers") or []:
         if f["days"] > CARRIER_DAYS:

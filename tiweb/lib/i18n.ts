@@ -251,8 +251,6 @@ const it = {
     guide: "Guida",
   },
   overview: {
-    factionLines: "motti delle fazioni",
-    factionLinesHint: "Aggiunge il motto della tua fazione in fondo all'allerta sulle portaerei d'assalto aliene. Spento: il motto compare solo dopo che ne hai vista sbarcare una. Per chi conosce già il gioco.",
     title: "Panoramica",
     alerts: "Allerte",
     noAlerts: "Nessuna allerta. Tutto in ordine.",
@@ -1223,8 +1221,6 @@ const en: typeof it = {
     guide: "Guide",
   },
   overview: {
-    factionLines: "faction lines",
-    factionLinesHint: "Adds your faction's motto at the end of the alien assault carrier alert. Off: the motto only appears after you've seen one land. For players who already know the game.",
     title: "Overview",
     alerts: "Alerts",
     noAlerts: "No alerts. All clear.",

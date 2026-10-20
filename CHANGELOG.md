@@ -85,8 +85,7 @@ the raw values next to it.
     (100–21) → `FLASH` (≤20), e.g. "PRIORITY — Alien assault carrier inbound: Victor-7,
     T-140 days".
   - **No spoilers:** the wording only repeats what the game's own notification says.
-  - **Faction motto** at the end of the line once you've seen a carrier land, or always
-    with the **"faction lines"** option, off by default:
+  - **Faction motto** at the end of the line, from the first carrier on:
     - Humanity First: LEAVE NONE ALIVE
     - Resistance: ENGAGE AND DESTROY
     - Academy: STAND TOGETHER

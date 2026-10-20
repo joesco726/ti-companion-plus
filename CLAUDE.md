@@ -259,11 +259,8 @@ con `isAI == false`.
   **Niente spoiler**: i testi dicono solo ciò che dice la notifica del gioco (portaerei
   d'assalto, orbita terrestre, data). Etichetta per i giorni rimasti: PRIORITÀ fino a 180,
   IMMEDIATO da 100, FLASH da 20 (una nave si costruisce in circa 90 giorni).
-  Dopo il primo sbarco visto (pietra miliare `AliensLandArmy` nelle `milestones` della
-  fazione: il gioco la completa per tutte e lo notifica) il dettaglio finisce col motto
-  della fazione (`alert.carrier.motto.<templateName>`), o sempre con l'opzione «motti delle
-  fazioni» delle allerte (impostazione `alertOptions.factionLines`, spenta di default:
-  i veterani raramente lasciano sbarcare una portaerei).
+  Il dettaglio finisce col motto della fazione (`alert.carrier.motto.<templateName>`)
+  fin dalla prima portaerei: il motto non anticipa cosa succede all'arrivo.
 - **Bonus spaziali delle org** (`TIOrgState.description`): `spaceDevBonus` →
   Finanziamenti; `spaceflightBonus` → Programma spaziale, Capacità di lancio,
   exovelivoli; `MCBonus` → Controllo missioni. Acquisizione ostile può colpire

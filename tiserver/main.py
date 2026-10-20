@@ -434,20 +434,6 @@ def org_profile_delete(profile_id: int, lang: str = Query(None)):
         return state.org_profile_delete(profile_id, lang)
 
 
-# ---------------------------------------------------------- opzioni delle allerte
-
-@app.get("/api/alerts/options")
-def alert_options():
-    with http_errors():
-        return state.alert_options()
-
-
-@app.put("/api/alerts/options")
-def alert_options_set(body: dict = Body(...)):
-    with http_errors():
-        return state.alert_options_set(body)
-
-
 # ---------------------------------------------------------- corpi sorvegliati
 
 @app.put("/api/mining/watch")
