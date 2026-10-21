@@ -102,7 +102,10 @@ the raw values next to it.
 
 ### Overview
 
-- Only alien sites discovered in the last year are listed; older ones are counted.
+- **Options to hide noise**, as checkboxes in the panel headers:
+  - Alerts → "all affordable orgs": the alert for every organization you can afford.
+    It switches off by itself when you enable an org profile, until you set it.
+  - Known alien sites → "last year only": older sites are only counted.
 - Control point usage and cap include DLC scenario rules. If the cap uses effects the
   companion can't read, the Overview says so.
 

@@ -448,6 +448,20 @@ def body_watch_set(body: dict = Body(...), lang: str = Query(None)):
         return state.body_watch_set(body, lang)
 
 
+# ---------------------------------------------------------- opzioni di visualizzazione
+
+@app.get("/api/options")
+def options():
+    with http_errors():
+        return state.options()
+
+
+@app.put("/api/options")
+def options_set(body: dict = Body(...)):
+    with http_errors():
+        return state.options_set(body)
+
+
 @app.get("/api/stream")
 async def stream():
     q: asyncio.Queue = asyncio.Queue()

@@ -115,7 +115,7 @@ ti.py       CLI sottile sopra ticore (utile senza browser).
 · `/api/nations/trends` · `/api/nations/{name}/detail` · `/api/factions` (+ `councilors`) · `/api/space` · `/api/mining` (+ `watch`) · `/api/techs` · `/api/yass`
 · `/api/presets` (+ `install`, `restore`, `custom`)
 · `/api/nations` (dentro snapshot) · `/api/history` · `/api/campaigns` · `/api/diff`
-· `/api/goals` · `/api/notes` · `/api/saves` · `/api/languages` · `/api/stream` (SSE)
+· `/api/goals` · `/api/notes` · `/api/options` · `/api/saves` · `/api/languages` · `/api/stream` (SSE)
 · `/api/health` · `/api/icons/mission/{icona}.png` · `/api/icons/status`
 
 Il watcher controlla la mtime ogni 3 s, ricarica, archivia lo snapshot, rivaluta le
