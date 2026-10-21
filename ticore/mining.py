@@ -233,7 +233,8 @@ def _own_groups(t, bodies_tpl):
     """Gruppi di un corpo che orbita il Sole, senza contare le lune
     (innerSystemAsteroid & co. con includeSatellites falso). I gruppi oltre
     Giove non escludono gli asteroidi interni: un corpo puo' stare in due."""
-    if t.get("barycenterName") != "Sol":
+    # senza orbita nel template (Leleakuhonua & co., «NO ORBITS», nessun sito)
+    if t.get("barycenterName") != "Sol" or not t.get("semiMajorAxis_AU"):
         return set()
     a, peri, _ = _orbit(t)
     typ = t.get("objectType")
