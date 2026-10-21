@@ -130,6 +130,9 @@ the raw values next to it.
   other language. Requests are now handled one at a time.
 - **Steam libraries on other drives** (e.g. `D:\SteamLibrary`) are found automatically.
 - **Negative org incomes** show as "-2.0" in red instead of "+-2.0".
+- **Import** (History → data) also brings watched bodies, display options and profile
+  thresholds, when the destination doesn't have its own yet, and says how many profiles
+  and settings came in.
 
 ### Project
 

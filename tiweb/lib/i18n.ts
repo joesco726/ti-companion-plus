@@ -1351,7 +1351,7 @@ const it = {
     dataImport: "Importa…",
     dataImportHint:
       "L'import unisce, non sostituisce: si può rifare senza creare doppioni. Accetta un export del companion (.zip), il companion.db dell'API locale o un presets.json.",
-    dataImported: "Importati {snapshots} giorni nuovi, {newer} aggiornati, {notes} note, {goals} obiettivi, {presets} preset.",
+    dataImported: "Importati {snapshots} giorni nuovi, {newer} aggiornati, {notes} note, {goals} obiettivi, {profiles} profili, {settings} impostazioni, {presets} preset.",
     dataExported: "Esportato {file}.",
   },
   plan: {
@@ -2727,7 +2727,7 @@ const en: typeof it = {
     dataImport: "Import…",
     dataImportHint:
       "Import merges, it doesn't replace: you can redo it without duplicates. It takes a companion export (.zip), the local API's companion.db or a presets.json.",
-    dataImported: "Imported {snapshots} new days, {newer} updated, {notes} notes, {goals} goals, {presets} presets.",
+    dataImported: "Imported {snapshots} new days, {newer} updated, {notes} notes, {goals} goals, {profiles} profiles, {settings} settings, {presets} presets.",
     dataExported: "Exported {file}.",
   },
   plan: {

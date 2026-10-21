@@ -57,7 +57,7 @@ def export(con):
 def import_bytes(con, data):
     """Unisce un export (zip), un companion.db o un presets.json. Torna i conteggi."""
     out = {"snapshots": 0, "snapshotsNewer": 0, "notes": 0, "goals": 0, "profiles": 0,
-           "presets": 0}
+           "settings": 0, "presets": 0}
     if data[:4] == b"PK\x03\x04":
         with zipfile.ZipFile(io.BytesIO(data)) as z:
             names = set(z.namelist())
@@ -74,6 +74,9 @@ def import_bytes(con, data):
             raise ValueError(t("err.importUnknown"))
         out["presets"] = _merge_presets(parsed)
     return out
+
+
+IMPORT_SETTINGS = ("bodyWatch", "options", "profileThresholds")
 
 
 def _merge_db(con, raw):
@@ -128,11 +131,20 @@ def _merge_db(con, raw):
                     "SELECT data,created,updated FROM src.recruit_profiles s "
                     "WHERE NOT EXISTS (SELECT 1 FROM recruit_profiles p "
                     "WHERE p.data=s.data AND p.created=s.created)").rowcount
+            # scelte del giocatore (corpi sorvegliati, opzioni, soglie dei
+            # profili): aggiunte solo se qui mancano. saveIndex no: descrive i
+            # file di un'altra macchina
+            settings = 0
+            if "settings" in have:
+                settings = con.execute(
+                    "INSERT OR IGNORE INTO settings (key,value) SELECT key,value "
+                    "FROM src.settings WHERE key IN (%s)" % ",".join("?" * len(IMPORT_SETTINGS)),
+                    IMPORT_SETTINGS).rowcount
             con.commit()
         finally:
             con.execute("DETACH DATABASE src")
     return {"snapshots": new, "snapshotsNewer": touched - new, "notes": notes, "goals": goals,
-            "profiles": profiles}
+            "profiles": profiles, "settings": settings}
 
 
 def _merge_presets(data):
