@@ -9,9 +9,10 @@
 
 import type { UiLang } from "./i18n";
 
-/** indirizzo del sito pubblicato; vuoto finche' non ce n'e' uno: niente
- *  canonical, sitemap ne' url nei metadati */
-export const SITE_URL: string = "";
+/** Address of the published site, set at build time by deploy.ps1
+ *  (NEXT_PUBLIC_SITE_URL). Empty in local builds: no canonical, sitemap or
+ *  url in the metadata. */
+export const SITE_URL: string = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
 
 export interface Landing {
   tagline: string;
