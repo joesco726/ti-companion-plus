@@ -115,7 +115,7 @@ function DataPanel({ onImported }: { onImported: () => void }) {
         r.readAsDataURL(file);
       });
       const res = await api<{ snapshots: number; snapshotsNewer: number; notes: number;
-        goals: number; presets: number }>("/api/data/import",
+        goals: number; profiles: number; settings: number; presets: number }>("/api/data/import",
         { method: "POST", body: JSON.stringify({ file: file.name, base64: b64 }) });
       setMsg({ text: fill(h.dataImported, { ...res, newer: res.snapshotsNewer }) });
       setTick((x) => x + 1);

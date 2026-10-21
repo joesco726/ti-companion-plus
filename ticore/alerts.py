@@ -367,9 +367,14 @@ def evaluate(cur, prev=None, profiles=None):
             out.append(_alert("ruleerror:%s" % rule.__name__, "info",
                               t("alert.ruleerror.title", _lang(cur)),
                               "%s: %s" % (rule.__name__, e)))
-    # con un profilo delle org attivo, l'allerta su ogni org acquistabile tace:
+    # l'allerta su ogni org acquistabile e' un'opzione (Service.options): spenta,
     # avvisano solo le org che corrispondono ai profili
-    if any(p.get("enabled") for p in (profiles or {}).get("orgProfiles") or []):
+    opts = (profiles or {}).get("options")
+    if opts is None:  # senza opzioni (CLI, test): la regola di prima
+        org_alerts = not any(p.get("enabled") for p in (profiles or {}).get("orgProfiles") or [])
+    else:
+        org_alerts = opts.get("orgAlerts", True)
+    if not org_alerts:
         out = [a for a in out if not a["id"].startswith("org:")]
     out.sort(key=lambda a: (SEVERITY_ORDER.get(a["severity"], 9), a["title"]))
     return out

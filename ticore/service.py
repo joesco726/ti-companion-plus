@@ -293,6 +293,31 @@ class Service:
         self._realert()
         return self._body_watch()
 
+    def options(self):
+        """Opzioni di visualizzazione: cio' che il giocatore puo' spegnere come
+        rumore. orgAlerts: un'allerta per ogni org che diventa acquistabile;
+        finche' il giocatore non la tocca, e' spenta appena c'e' un profilo
+        delle org attivo (avvisano solo le org dei profili).
+        alienSitesLastYear: la panoramica elenca solo i siti alieni scoperti
+        nell'ultimo anno di gioco."""
+        o = store.get_setting(self.con, "options") or {}
+        org = o.get("orgAlerts")
+        if org is None:
+            org = not any(p.get("enabled") for p in store.list_profiles(self.con)
+                          if p.get("kind") == "org")
+        return {"orgAlerts": bool(org),
+                "alienSitesLastYear": bool(o.get("alienSitesLastYear"))}
+
+    def options_set(self, body):
+        """Scrive solo le chiavi ricevute: le altre restano com'erano."""
+        o = store.get_setting(self.con, "options") or {}
+        for k in ("orgAlerts", "alienSitesLastYear"):
+            if k in (body or {}):
+                o[k] = bool(body[k])
+        store.set_setting(self.con, "options", o)
+        self._realert()
+        return self.options()
+
     def yass(self, lang=None):
         """Dati di partenza dei calcolatori di nazione: vedi ticore/yass.py."""
         self.require()
@@ -477,7 +502,8 @@ class Service:
         return {"profiles": [p for p in allp if p.get("kind") != "org"],
                 "orgProfiles": [p for p in allp if p.get("kind") == "org"],
                 "thresholds": self._thresholds(),
-                "bodyWatch": self._body_watch()}
+                "bodyWatch": self._body_watch(),
+                "options": self.options()}
 
     def _kind_of(self, profile_id):
         p = next((p for p in store.list_profiles(self.con) if p["id"] == profile_id), None)
@@ -659,4 +685,6 @@ _ROUTES = [
     ("DELETE", r"/api/orgprofiles/(\d+)",
      lambda s, q, b, i: s.org_profile_delete(int(i), q.get("lang"))),
     ("PUT", r"/api/mining/watch", lambda s, q, b: s.body_watch_set(b, q.get("lang"))),
+    ("GET", r"/api/options", lambda s, q, b: s.options()),
+    ("PUT", r"/api/options", lambda s, q, b: s.options_set(b)),
 ]

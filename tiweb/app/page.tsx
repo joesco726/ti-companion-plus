@@ -1,12 +1,60 @@
 "use client";
 
 import { useState } from "react";
-import { useSnapshot } from "@/lib/api";
+import { api, useApi, useSnapshot } from "@/lib/api";
 import { ResearchPanel } from "@/components/ResearchPanel";
 import { useSettings } from "@/lib/settings";
 import { GAME_LOCALES } from "@/lib/i18n";
 import { Bars, Empty, MissionIcon, Panel, ResourceIcon, Tag, nf, gameAgo } from "@/components/ui";
+import { Tip } from "@/components/Tip";
 import type { Alert, Snapshot } from "@/lib/types";
+
+/** Opzioni di visualizzazione (Service.options): stanno nel database del
+ *  companion, perche' le allerte si calcolano nel motore. */
+interface Options { orgAlerts: boolean; alienSitesLastYear: boolean }
+
+function useOptions() {
+  const { refreshAlerts } = useSettings();
+  const { data, reload } = useApi<Options>("/api/options");
+  // la casella cambia subito, senza aspettare la risposta del motore
+  const [local, setLocal] = useState<Partial<Options>>({});
+  const set = async (patch: Partial<Options>) => {
+    setLocal((l) => ({ ...l, ...patch }));
+    await api("/api/options", { method: "PUT", body: JSON.stringify(patch) });
+    reload();
+    if ("orgAlerts" in patch) refreshAlerts();
+  };
+  return { opts: data && { ...data, ...local }, set };
+}
+
+/** Casella piccola nell'intestazione di un pannello, con la spiegazione al passaggio. */
+function OptionToggle({ label, hint, checked, onChange }: {
+  label: string; hint: string; checked: boolean; onChange: (v: boolean) => void;
+}) {
+  return (
+    <Tip title={label} width={320} content={<p className="m-0">{hint}</p>}>
+      <label className="flex items-center gap-1.5 text-faint text-[11.5px] cursor-pointer">
+        <input type="checkbox" className="p-0" checked={checked}
+          onChange={(e) => onChange(e.target.checked)} />
+        {label}
+      </label>
+    </Tip>
+  );
+}
+
+/** L'allerta su ogni org acquistabile: con i profili delle org, spesso rumore. */
+function OrgAlertsToggle() {
+  const { t } = useSettings();
+  const { opts, set } = useOptions();
+  if (!opts) return null;
+  return (
+    <OptionToggle label={t.overview.orgAlerts} hint={t.overview.orgAlertsHint}
+      checked={opts.orgAlerts} onChange={(v) => { void set({ orgAlerts: v }); }} />
+  );
+}
+
+/** Siti alieni dell'ultimo anno di gioco, se l'opzione e' accesa. */
+const ALIEN_RECENT_DAYS = 365;
 
 const TONE = {
   critical: { border: "border-bad", text: "text-bad" },
@@ -53,19 +101,26 @@ function SiteRow({ s, snap, game, label }: { s: Site; snap: Snapshot; game: stri
 
 function AlienSites({ snap }: { snap: Snapshot }) {
   const { t, game } = useSettings();
+  const { opts, set } = useOptions();
   const [all, setAll] = useState(false);
   const [sort, setSort] = useState<SiteSort>("date");
   const loc = GAME_LOCALES[game] ?? "en";
-  const more = snap.alienSites.length > RECENT_SITES;
+  const lastYear = !!opts?.alienSitesLastYear;
+  const now = Date.parse(snap.dateKey);
+  const shown = lastYear
+    ? snap.alienSites.filter((s) => !(now - Date.parse(s.sinceKey) > ALIEN_RECENT_DAYS * 86_400_000))
+    : snap.alienSites;
+  const older = snap.alienSites.length - shown.length;
+  const more = shown.length > RECENT_SITES;
   // dal backend arrivano gia' dal piu' recente
   const sorted = sort === "name"
-    ? [...snap.alienSites].sort((a, b) => a.region.localeCompare(b.region, loc))
-    : snap.alienSites;
+    ? [...shown].sort((a, b) => a.region.localeCompare(b.region, loc))
+    : shown;
   const sites = all ? sorted : sorted.slice(0, RECENT_SITES);
   // per nazione: prima chi ne ha di piu', dentro ogni gruppo dal piu' recente
   const groups = new Map<string, Site[]>();
   if (sort === "nation") {
-    for (const s of snap.alienSites) {
+    for (const s of shown) {
       const k = s.nation ?? "?";
       groups.set(k, [...(groups.get(k) ?? []), s]);
     }
@@ -73,7 +128,10 @@ function AlienSites({ snap }: { snap: Snapshot }) {
   const byNation = [...groups.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], loc));
   const grid = "grid gap-x-6 gap-y-1.5 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]";
   return (
-    <Panel title={t.overview.alienSites}>
+    <Panel title={t.overview.alienSites} right={opts && (
+      <OptionToggle label={t.overview.alienSitesLastYear} hint={t.overview.alienSitesLastYearHint}
+        checked={lastYear} onChange={(v) => { void set({ alienSitesLastYear: v }); }} />
+    )}>
       {more && (
         <div className="flex gap-1 mb-2 text-[12px]">
           {(["date", "name", "nation"] as SiteSort[]).map((k) => (
@@ -107,8 +165,13 @@ function AlienSites({ snap }: { snap: Snapshot }) {
       {more && (
         <button type="button" onClick={() => { setAll(!all); if (all) setSort("date"); }}
           className="mt-2 text-[12px] text-accent hover:underline cursor-pointer">
-          {all ? t.overview.alienSitesRecent : t.overview.alienSitesAll.replace("{n}", String(snap.alienSites.length))}
+          {all ? t.overview.alienSitesRecent : t.overview.alienSitesAll.replace("{n}", String(shown.length))}
         </button>
+      )}
+      {older > 0 && (
+        <p className="mt-2 mb-0 text-faint text-[12px]">
+          {t.overview.alienSitesOlder.replace("{n}", String(older))}
+        </p>
       )}
     </Panel>
   );
@@ -149,7 +212,7 @@ export default function Overview() {
     <>
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <Panel title={t.overview.alerts}
+          <Panel title={t.overview.alerts} right={<OrgAlertsToggle />}
             sub={live.alerts.length ? undefined : t.overview.noAlerts}>
             {live.alerts.length === 0
               ? null

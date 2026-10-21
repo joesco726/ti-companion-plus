@@ -102,7 +102,10 @@ the raw values next to it.
 
 ### Overview
 
-- Only alien sites discovered in the last year are listed; older ones are counted.
+- **Options to hide noise**, as checkboxes in the panel headers:
+  - Alerts → "all affordable orgs": the alert for every organization you can afford.
+    It switches off by itself when you enable an org profile, until you set it.
+  - Known alien sites → "last year only": older sites are only counted.
 - Control point usage and cap include DLC scenario rules. If the cap uses effects the
   companion can't read, the Overview says so.
 
@@ -127,6 +130,9 @@ the raw values next to it.
   other language. Requests are now handled one at a time.
 - **Steam libraries on other drives** (e.g. `D:\SteamLibrary`) are found automatically.
 - **Negative org incomes** show as "-2.0" in red instead of "+-2.0".
+- **Import** (History → data) also brings watched bodies, display options and profile
+  thresholds, when the destination doesn't have its own yet, and says how many profiles
+  and settings came in.
 
 ### Project
 

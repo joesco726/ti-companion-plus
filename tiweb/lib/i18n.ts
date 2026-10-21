@@ -263,6 +263,11 @@ const it = {
     alienSitesAll: "Tutti ({n})",
     alienSitesRecent: "Solo i più recenti",
     alienSitesSort: { date: "Data", name: "Nome", nation: "Nazione" },
+    alienSitesLastYear: "solo l'ultimo anno",
+    alienSitesLastYearHint: "Elenca solo i siti alieni scoperti negli ultimi 365 giorni di gioco; dei più vecchi dice solo quanti sono.",
+    alienSitesOlder: "{n} siti più vecchi di un anno non mostrati",
+    orgAlerts: "tutte le org acquistabili",
+    orgAlertsHint: "Un'allerta per ogni organizzazione che diventa acquistabile. Spenta: avvisano solo le org che corrispondono ai tuoi profili (Organizzazioni → profili). Finché non la tocchi, si spegne da sola quando attivi un profilo delle org.",
     projects: "Progetti in corso",
     researchRate: "ricerca al mese",
     capOverage: "Tetto dei punti di controllo superato",
@@ -1346,7 +1351,7 @@ const it = {
     dataImport: "Importa…",
     dataImportHint:
       "L'import unisce, non sostituisce: si può rifare senza creare doppioni. Accetta un export del companion (.zip), il companion.db dell'API locale o un presets.json.",
-    dataImported: "Importati {snapshots} giorni nuovi, {newer} aggiornati, {notes} note, {goals} obiettivi, {presets} preset.",
+    dataImported: "Importati {snapshots} giorni nuovi, {newer} aggiornati, {notes} note, {goals} obiettivi, {profiles} profili, {settings} impostazioni, {presets} preset.",
     dataExported: "Esportato {file}.",
   },
   plan: {
@@ -1634,6 +1639,11 @@ const en: typeof it = {
     alienSitesAll: "All ({n})",
     alienSitesRecent: "Most recent only",
     alienSitesSort: { date: "Date", name: "Name", nation: "Nation" },
+    alienSitesLastYear: "last year only",
+    alienSitesLastYearHint: "Lists only the alien sites discovered in the last 365 game days; older ones are only counted.",
+    alienSitesOlder: "{n} sites older than a year not shown",
+    orgAlerts: "all affordable orgs",
+    orgAlertsHint: "An alert for every organization that becomes affordable. Off: only the orgs that match your profiles alert (Organizations → profiles). Until you change it, it switches off by itself when you enable an org profile.",
     projects: "Active projects",
     researchRate: "research per month",
     capOverage: "Control point cap exceeded",
@@ -2717,7 +2727,7 @@ const en: typeof it = {
     dataImport: "Import…",
     dataImportHint:
       "Import merges, it doesn't replace: you can redo it without duplicates. It takes a companion export (.zip), the local API's companion.db or a presets.json.",
-    dataImported: "Imported {snapshots} new days, {newer} updated, {notes} notes, {goals} goals, {presets} presets.",
+    dataImported: "Imported {snapshots} new days, {newer} updated, {notes} notes, {goals} goals, {profiles} profiles, {settings} settings, {presets} presets.",
     dataExported: "Exported {file}.",
   },
   plan: {
