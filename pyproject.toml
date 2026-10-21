@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ti-companion-plus"
-version = "0.1.0"
+version = "0.2.0"
 description = "TI Companion Plus, a spinoff of b4p3p's Terra Invicta Companion: a second-screen companion for Terra Invicta that reads your save file and shows council, missions and nations while you play."
 readme = "README.md"
 requires-python = ">=3.10"

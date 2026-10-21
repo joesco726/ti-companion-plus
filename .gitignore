@@ -16,6 +16,7 @@ tiweb/out/
 
 # Dati locali
 PARTITA.local.md
+*.local.txt
 *.db
 *.sqlite3
 .env

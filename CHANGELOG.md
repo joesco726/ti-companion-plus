@@ -8,30 +8,47 @@ The project rule still holds for every feature below: the companion only reads w
 game already shows you. Where a number is our own calculation, the app says so and shows
 the raw values next to it.
 
-## Since the fork
+## 0.2.0 — 21 October 2026
+
+First public release. Use it at **<https://ti-companion-plus.pages.dev>** in Chrome or
+Edge: pick your `My Games` folder and it follows your saves. Nothing to install, and your
+saves never leave your PC.
+
+This version also brings in b4p3p's work since the fork (see
+[From the original project](#from-the-original-project)).
 
 ### Highlights
 
-- **Recruitment and org profiles.** Describe the councilors or orgs you want once; the
-  companion alerts you when one shows up on the market.
-- **Launch windows and watched bodies.** See the Earth launch window for every mining
-  body and get an alert when it opens and a site is free.
-- **Assault carrier warning.** A critical alert that counts down to the arrival of an
-  alien assault carrier you can see, with escalating tags.
-- **Mine network.** The "mines used / mines allowed" number the game hides in the
-  mission control tooltip, as a stat and an alert.
-- **DLC scenarios.** Broken Earth and 2003 games now use their own data, so control
-  points and names come out right.
+| Feature | Where to find it |
+|---|---|
+| **Recruitment profiles**: describe the councilors you want; get an alert when one shows up on the market | Council → Recruitment → Recruit profiles |
+| **Org profiles**: alerts only for the organizations you'd actually buy | Organizations → Org profiles |
+| **Launch windows and watched bodies**: the Earth launch window for every mining body, and an alert when it opens and a site is free | Space → Mining → Window column, 🔕 button next to a body |
+| **Mining areas**: filter sites by the game's own areas (Inner / Middle / Outer Belt, Centaurs…), and see which mission unlocks a site | Space → Mining → Areas checkboxes, Status column |
+| **Assault carrier warning**: a critical alert counting down to a visible alien assault carrier's arrival | Overview → Alerts |
+| **Mine network**: the "mines used / mines allowed" number the game hides in a tooltip | Space → Mining, first stat; Overview → Alerts |
+| **DLC scenarios**: Broken Earth and 2003 games use their own data, so control points and names come out right | everywhere, automatic |
 
 ### Council and recruitment
 
-- **Recruitment profiles** (Council → recruits). Each profile combines conditions on
-  traits, missions and high or low attributes:
-  - pick them from a tag grid organised like the official wiki's trait sections, each
-    tag cycling through "has all", "at least one" and "none";
+Where: **Council → Recruitment** (the dashed card at the top of the team list) → **Recruit
+profiles**.
+
+- **Recruitment profiles.** Each profile combines conditions on traits, missions and high
+  or low attributes:
+  - pick traits from a tag grid laid out like the official wiki's trait sections, in rows
+    (Wealth and Influence, Nation and Personality, Advisor / Space / Minions / Caution /
+    XP, Engineering Project and National Priority, then the rest);
+  - each tag cycles through "has all", "at least one" and "none of";
+  - hover a tag for the game's description of the trait and its effects;
   - optionally count a mission only if your council doesn't already have it;
   - set an age range with a two-handle slider;
-  - turn each profile on or off and choose its alert level.
+  - turn each profile on or off and choose its alert level;
+  - the name is optional: without one, the profile is named after its conditions.
+- **Shortcuts** on the profile editor:
+  - "also needs Quick Learner or Striver", on top of any other condition;
+  - "can't run Inspire" and "can lose loyalty" exclude, in one click, the traits that
+    can't be removed and block Inspire or bring conditional loyalty losses.
 - **Profile sanity checks**, from the game's spawn rules:
   - a warning when no randomly generated councilor can have the combination, naming the
     smallest pair that can't go together;
@@ -40,13 +57,13 @@ the raw values next to it.
     appear for your faction.
 - Only traits a candidate can actually spawn with are offered; XP ranks and event traits
   are left out.
-- The recruitment button sits at the top of the team list, full width.
 
 ### Organizations
 
-- **New Organizations tab**, between Council and Missions, holding the org market and
-  org profiles.
-- **Org profiles.** Alert only for the orgs you want:
+Where: the new **Organizations** tab, between Council and Missions. It holds the org
+market and the org profiles.
+
+- **Org profiles.** Alerts only for the orgs you want:
   - conditions on attributes, national and space priorities (mining included), research
     categories, incomes and granted missions;
   - optional "at least / at most" limits, with the possible values as hints;
@@ -62,28 +79,33 @@ the raw values next to it.
   arrow (green ↓ approaching, red ↑ passed), the next window date and the cycle length.
   It's computed exactly as the game does, from the orbits, and checked against the
   in-game Intel screen.
-- **Watched bodies.** A 🔕 → 🔔 → 🔔🚀 button per body and a single −50…+50% band slider
-  (default −10…+10). A watched body alerts when its window is in the band and it has a
-  free site. With 🚀 it also needs your boost to cover an Outpost Core.
+- **Watched bodies.** A 🔕 → 🔔 → 🔔🚀 button next to each body's name, and a single
+  −50…+50% band slider (default −10…+10). A watched body alerts when its window is in
+  the band and it has a free site. With 🚀 it also needs your boost to cover an Outpost
+  Core.
 - **Outpost Core boost cost from Earth**, shown per body. It uses the game's formula:
   Hohmann delta-v from low Earth orbit plus landing at the site, and your rockets'
   exhaust velocity. It matches the game (41 Daphne: 10.1). The window doesn't change it;
   the penalty only lengthens the trip.
-- **Stars on prospected sites.** ★ next to a site's class resources (e.g. water +
-  volatiles for a Common Carbonaceous) when their true sum beats the top of the range
-  the game showed for that class on that body before the probe.
-- **Area checkboxes** above the sites table, with the areas of the game's Intel screen
+- **Areas.** Checkboxes above the sites table with the areas of the game's Intel screen
   Location filter: Mercury, Luna, Inner System Asteroids, Mars, Inner / Middle / Outer
   Belt, Jupiter, Saturn, Centaurs, Uranus, Neptune, Kuiper Belt Objects. As in the game,
   a planet includes its moons. Each shows how many sites it has; the choice is remembered.
 - **What unlocks a site.** Under "unreachable" in the Status column, the tech that opens
-  the body for exploration (e.g. "Mission to Jupiter"), in the game's words. Typing a tech
-  name in the search box lists the sites it opens.
+  the body for exploration (e.g. "Mission to Jupiter"), in the game's words. Typing a
+  tech name in the search box lists the sites it opens. Areas and unlocks don't line up
+  one to one: Mission to Mars also opens Eros, Cruithne and the other Earth
+  Lagrange-point asteroids.
+- **Stars on prospected sites.** ★ next to a site's class resources (e.g. water +
+  volatiles for a Common Carbonaceous) when their true sum beats the top of the range
+  the game showed for that class on that body before the probe.
 - **Mine network stat**, "17/24": active mines against how many the network supports
   without extra mission control. Neutral below the cap, green at it, amber 1–4 over,
   red 5+ over.
 
 ### Alerts
+
+Where: **Overview → Alerts**.
 
 - **Assault carrier inbound** (critical).
   - **Trigger:** a visible alien fleet carrying an assault carrier is on its way to
@@ -128,8 +150,23 @@ the raw values next to it.
   "Consiglio nazionale per la ricostruzione".
 - The web version downloads scenario data only when your save uses a scenario.
 
+### From the original project
+
+b4p3p's work since the fork, merged in:
+
+- **YASS** (Nations → YASS): spreadsheet-style calculators for a nation: projection,
+  Economy, Split, Advise, Mission control, Miltech.
+- **Mining value weights** (Space → Mining → "Value"): market prices, your own weight
+  per resource, or all set to 1.
+- **Alien sites and habitats at end game**: sorting (date, name, nation) and an "All" button.
+- Advise uses Administration capped at 25, as the game does.
+- Regression tests for the core and the YASS calculators.
+
 ### Fixes
 
+- **New campaign in a big save folder:** the research comparison no longer opens every
+  save in the folder, so the first load after starting a new game is quick even with
+  hundreds of old saves.
 - **Game date:** read from the save's calendar fields, not the Windows date string. US
   date formats had swapped month and day, which broke history order, "days ago" and goal
   deadlines.
@@ -137,20 +174,29 @@ the raw values next to it.
   other language. Requests are now handled one at a time.
 - **Steam libraries on other drives** (e.g. `D:\SteamLibrary`) are found automatically.
 - **Negative org incomes** show as "-2.0" in red instead of "+-2.0".
-- **Import** (History → data) also brings watched bodies, display options and profile
+- **Import** (History → Companion data) also brings watched bodies, display options and profile
   thresholds, when the destination doesn't have its own yet, and says how many profiles
   and settings came in.
 
 ### Project
 
-- It's now a separate project: new name, credits to the original, no donation links, its
+- **Hosted site** at <https://ti-companion-plus.pages.dev>, with the game-data extract
+  served alongside it, so players only pick their saves folder.
+- No visitor counting: the original's anonymous counter is switched off in this build.
+- [INSTALL.md](INSTALL.md): running it locally, updating, and publishing your own copy
+  (`deploy.ps1`).
+- It's a separate project: new name, credits to the original, no donation links, its
   own data folder (`~/.ti-companion-plus/`) and ports (8733 / 3033).
-- `UPDATING.txt` is a plain-text cheat sheet for updating, starting and stopping the app.
 - The project notes (`CLAUDE.md`) record every game rule used, read from the game's
   templates and code and checked against real saves.
 
-### Upgrading
+### Upgrading from 0.1.0
 
-- After updating, re-run `python -m ticore.bundle` so the web version's game-data
-  extract includes the new fields: orbits, body sizes, ship modules and DLC scenarios.
-  The local app reads your game install directly and needs nothing extra.
+- **On the site:** nothing to do. To bring your profiles and settings from a local copy,
+  export them there (History → Companion data) and import the file on the site.
+- **Local copy:** `git pull`, then `pip install -e .` and `npm install` in `tiweb`. The
+  local app reads your game install directly and needs nothing else.
+
+## 0.1.0 — 30 September 2026
+
+The fork point: b4p3p's Terra Invicta Companion at commit `49e7082`.

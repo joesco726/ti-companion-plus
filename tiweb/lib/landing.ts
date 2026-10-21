@@ -53,7 +53,7 @@ const en: Landing = {
     "Choose My Games or TerraInvicta inside Documents: the companion finds the Saves folder by itself.",
     "Keep it on a second monitor. It reloads by itself every time the game saves.",
     "The first visit downloads about 13 MB (Python compiled to WebAssembly); after that it starts from the browser cache.",
-    "Just curious? The demo opens a real campaign of the author's, in any browser.",
+    "Just curious? The demo opens a real campaign by b4p3p, author of the original companion, in any browser.",
   ],
   faqTitle: "Questions",
   faq: [
@@ -107,7 +107,7 @@ const it: Landing = {
     "In Documenti scegli My Games o TerraInvicta: alla cartella Saves ci arriva da solo.",
     "Tienilo sul secondo monitor. Si ricarica da solo ogni volta che il gioco salva.",
     "La prima visita scarica circa 13 MB (Python compilato in WebAssembly); poi parte dalla cache del browser.",
-    "Solo curioso? La demo apre una partita vera dell'autore, in qualunque browser.",
+    "Solo curioso? La demo apre una partita vera di b4p3p, l'autore del companion originale, in qualunque browser.",
   ],
   faqTitle: "Domande",
   faq: [
