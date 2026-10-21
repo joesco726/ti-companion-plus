@@ -18,6 +18,8 @@ interface Site {
   /** voci del filtro per zona (mining.REGION_OPTIONS) che mostrano il sito */
   regions: string[];
   prospected: boolean; probeEnRoute: boolean; reachable: boolean;
+  /** da irraggiungibile: le tecnologie che aprono il corpo, una basta */
+  needs: string[];
   yields: Record<ResKey, Yield>; value: number;
   occupant: (FactionRef & { mine: boolean }) | null;
   /** corpi esplorati: somma delle risorse della classe contro la somma dei
@@ -141,7 +143,14 @@ function ValueCell({ site, res, vm, value }: { site: Site; res: Res[]; vm: Value
 function Status({ s }: { s: Site }) {
   const { t } = useSettings();
   const m = t.mining;
-  if (!s.reachable) return <Tip title={m.unreachable} content={m.unreachableHint}><span className="text-faint">{m.unreachable}</span></Tip>;
+  if (!s.reachable) return (
+    <Tip title={m.unreachable} content={s.needs.length ? m.unreachableNeeds : m.unreachableHint}>
+      <span className="text-faint">
+        {m.unreachable}
+        {s.needs.length > 0 && <span className="block text-[11px]">{s.needs.join(" / ")}</span>}
+      </span>
+    </Tip>
+  );
   if (s.prospected) return <span className="text-good">{m.prospected}</span>;
   if (s.probeEnRoute) return <span className="text-warn">{m.probe}</span>;
   return <Tip title={m.estimate} content={m.estimateHint}><span className="text-dim">{m.estimate}</span></Tip>;
@@ -327,7 +336,8 @@ function Sites({ data, reload }: { data: Mining; reload: () => void }) {
     return data.sites.filter((s) =>
       (!reachable || s.reachable)
       && (!hideOccupied || !s.occupant)
-      && (!needle || s.name.toLowerCase().includes(needle) || s.body.name.toLowerCase().includes(needle)));
+      && (!needle || s.name.toLowerCase().includes(needle) || s.body.name.toLowerCase().includes(needle)
+        || s.needs.some((n) => n.toLowerCase().includes(needle))));
   }, [data.sites, q, reachable, hideOccupied]);
   const perRegion = useMemo(() => {
     const n = new Map<string, number>();

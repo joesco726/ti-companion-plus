@@ -76,6 +76,9 @@ the raw values next to it.
   Location filter: Mercury, Luna, Inner System Asteroids, Mars, Inner / Middle / Outer
   Belt, Jupiter, Saturn, Centaurs, Uranus, Neptune, Kuiper Belt Objects. As in the game,
   a planet includes its moons. Each shows how many sites it has; the choice is remembered.
+- **What unlocks a site.** Under "unreachable" in the Status column, the tech that opens
+  the body for exploration (e.g. "Mission to Jupiter"), in the game's words. Typing a tech
+  name in the search box lists the sites it opens.
 - **Mine network stat**, "17/24": active mines against how many the network supports
   without extra mission control. Neutral below the cap, green at it, amber 1–4 over,
   red 5+ over.
