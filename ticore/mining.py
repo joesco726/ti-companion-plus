@@ -187,6 +187,20 @@ def _my_effects(g, my_id):
     return names
 
 
+def _unlockers(lang):
+    """effetto -> nomi delle tecnologie e dei progetti che lo danno: per un
+    corpo irraggiungibile, cosa serve per esplorarlo (Missione su Giove...)."""
+    tpl = gamedata.templates()
+    out = {}
+    for fam, loc_tpl in (("techs", "TITechTemplate"), ("projects", "TIProjectTemplate")):
+        for name, t in (tpl.get(fam) or {}).items():
+            for e in t.get("effects") or []:
+                if isinstance(e, str) and e.startswith("Effect_Explore"):
+                    out.setdefault(e, []).append(
+                        gamedata.loc(lang, loc_tpl, "displayName", name, t.get("friendlyName")))
+    return out
+
+
 def _system_au(bodies_tpl, name):
     """Distanza media dal Sole: per una luna, quella del suo pianeta."""
     seen = set()
@@ -309,6 +323,7 @@ def _sites(g, lang, my_id, nm):
     body_intel = _intel_on(g.me, "intel", "TISpaceBodyState")
     hab_intel = _intel_on(g.me, "intel", "TIHabState")
     effects = _my_effects(g, my_id)
+    unlockers = _unlockers(lang)
     bodies = g.state("TISpaceBodyState")
     habs = g.state("TIHabState")
 
@@ -365,6 +380,8 @@ def _sites(g, lang, my_id, nm):
             "prospected": prospected,
             "probeEnRoute": probe,
             "reachable": reachable,
+            # da irraggiungibile: le tecnologie che lo aprono, una qualunque basta
+            "needs": [] if reachable else sorted({n for e in options for n in unlockers.get(e, [])}),
             "yields": rows,
             "value": round(value, 1),
             "occupant": occupant,
