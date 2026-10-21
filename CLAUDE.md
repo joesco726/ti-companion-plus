@@ -62,6 +62,20 @@ python -m watchfiles --filter python --sigint-timeout 2 --sigkill-timeout 1 "pyt
 cd tiweb && npm run dev                            # interfaccia su :3033
 ```
 
+## Test
+
+```bash
+python -m pytest                 # regole e formule; -m "not slow" salta bundle --check
+cd tiweb && npm test             # formule di lib/yass.ts (node --test, niente dipendenze)
+```
+
+`tests/` gira sul salvataggio di `fixtures/saves/`; altri con `TI_TEST_SAVES`
+(glob separati da `;`), per esempio quelli che mandano gli utenti, che restano
+fuori dal repo. I test che leggono i template si saltano senza il gioco.
+Un bug corretto si fissa con un test che lo riproduce: il caso Cina di
+`test_yass_rules.py` è costruito a mano proprio perché sui totali dei pallini
+la regola sbagliata dava la stessa somma.
+
 ## Architettura
 
 ```
@@ -92,11 +106,12 @@ ti.py       CLI sottile sopra ticore (utile senza browser).
 | `transfer.py` | finestra di lancio dalla Terra (penalità 0–50% sul tempo di viaggio, come la schermata Intel) e spinta di un modulo lanciato dalla Terra, ricalcolate come `GetNextHohmannLaunchWindowDate`/`GenericTransferBoostFromEarthSurface` dalle orbite dei template |
 | `watch.py` | corpi sorvegliati della scheda Estrazione: banda della finestra (−50…+50%, default −10…+10), sito libero, spinta opzionale per un Nucleo avamposto; allerta in `alerts.body_watch` |
 | `techs.py` | scheda Tecnologie: le tecnologie avviabili e cosa sblocca ognuna per la tua fazione (UniqueProjectUnlocks/ShouldHide del gioco). Percentuale = `GetProjectUnlockChance` come nella schermata Ricerca; i mesi di comparsa sono una stima nostra dalle regole dei trigger |
+| `yass.py` | YASS (Yet Another Spreadsheet Simulator), sotto Nazioni: i dati di partenza dei calcolatori di nazione. I conti li fa l'interfaccia (`tiweb/lib/yass.ts`, stesse formule) perché rispondano a ogni cella cambiata. Pannello Priorità come nel gioco (validità, bonus, /M), effetti per completamento, coesione di riposo coi termini leggibili e un residuo ricavato dal valore del gioco. Proiezione a 20 anni con IP che seguono il PIL, popolazione che cresce regione per regione, Controllo missioni fino al tetto e regioni petrolifere, minerarie ed economiche centrali che nascono dall'Economia; foglio Dividi (IP, CP e pro capite di N nazioni, CER divise fra i pezzi). `python -m ticore.yass [salvataggi]` confronta le formule col salvataggio, anche le Economie del mese col registro del PIL del gioco |
 | `store.py` | SQLite in `~/.ti-companion-plus/`: storico, note, obiettivi. La campagna è identificata da **fazione + difficoltà + `realWorldCampaignStart`** |
 
 ### API
 `/api/snapshot?lang=` · `/api/alerts` · `/api/missions` · `/api/missions/{id}/plan`
-· `/api/nations/trends` · `/api/nations/{name}/detail` · `/api/factions` (+ `councilors`) · `/api/space` · `/api/mining` (+ `watch`) · `/api/techs`
+· `/api/nations/trends` · `/api/nations/{name}/detail` · `/api/factions` (+ `councilors`) · `/api/space` · `/api/mining` (+ `watch`) · `/api/techs` · `/api/yass`
 · `/api/presets` (+ `install`, `restore`, `custom`)
 · `/api/nations` (dentro snapshot) · `/api/history` · `/api/campaigns` · `/api/diff`
 · `/api/goals` · `/api/notes` · `/api/saves` · `/api/languages` · `/api/stream` (SSE)
@@ -265,6 +280,20 @@ con `isAI == false`.
   Finanziamenti; `spaceflightBonus` → Programma spaziale, Capacità di lancio,
   exovelivoli; `MCBonus` → Controllo missioni. Acquisizione ostile può colpire
   anche il pool non assegnato della fazione bersaglio.
+- **Priorità di una nazione** (IL di `TINationState`, verificato sulla schermata Priorità della Francia: /M, Bonus e Perc. coincidono): gli IP del mese si dividono in parti uguali fra i punti di controllo, poi secondo i pallini delle sole priorità **valide** (`ValidPriority`: il gioco mostra solo quelle; un pallino su una priorità non valida non conta nel totale), × (1 + bonus). Bonus = fazione (`SumPriorityBonuses`: org e tratti dei consiglieri, laboratori in orbita bassa, effetti) + **diversità** del punto (per ogni altra priorità con pallini: Economia 0,5, le altre 0,2 × pallini / totale) + nazionale (Economia: federazione; eserciti: regioni minerarie). Un punto coi benefici sospesi non prende bonus positivi. Costo di un completamento: `priority_*` (Unità 2, Lancio 2, Controllo missioni 25, Armi nucleari 40 nel template).
+- **Effetti per completamento** = valore base × `priorityEffectPopScaling` = (pop / 50 mln)^−0,35. La Conoscenza sposta la coesione di 0,01 × scala **verso 5**: sopra 5 la abbassa. L'Unità aggiunge coesione (rende meno con istruzione e democrazia alte). Ogni 200 completamenti di Governo + Unità, sommati, una regione perde l'ostilità (`numPrioritiesForLegitimize`), a prescindere dalla popolazione.
+- **Coesione**: ogni mese va verso il riposo, in salita al più di 0,1, in discesa al più di clamp((disuguaglianza − 3)²/10, 0,1, 0,25). Quindi con poca Conoscenza **si ferma** a riposo + Conoscenze × passo; sale verso 5 solo se le Conoscenze del mese superano il calo massimo. Il **riposo** = 16 + termini, con la disuguaglianza come leva principale; il PIL pro capite alto non aiuta (pesa solo sotto il massimo degli ultimi 40 trimestri); sopra 6,5 la democrazia tira il riposo verso 5. Distanze e ideologia non le ricostruiamo: residuo dal valore salvato, stabile nello storico (oscillazione mediana 0,004).
+- **IP e PIL** (IL di `TINationState.ModifyGDP`/`SetBaseInvestmentPoints_month`, coincide col wiki GDP): IP base = (PIL / 1 mld)^0,35 × (1 + bonus Consigliere) × (1 − occupazione) × (1 − max(0, disordini − 2)/10) − eserciti e flotte. Un completamento di Economia (1 IP) aggiunge al PIL pro capite (3 + 1,5 × regioni risorse + 1,5 × CER + 0,5 × democrazia + istruzione) × scala di popolazione, per la popolazione. Il PIL pro capite **non cresce da solo**: il PIL segue la popolazione (`GrowPopulationByMonth`), l'Economia, eventi ed effetti, e cala col clima.
+- **Consiglia** (`TINationState.SetBaseInvestmentPoints_month`/`GetAdvisingScore`): IP × (1 + bonus), bonus = Amministrazione / 100 dei consiglieri che consigliano, dal più bravo, diviso la posizione (il secondo vale metà). L'Amministrazione è quella «capped» di `GetAttribute`: al più `maxCouncilorAttribute` = **25**, meno i malus dei tratti. Un consigliere da 48 dà +25%, due +37,5%. YASS conta solo i nostri: chi altro consiglia il gioco non lo dice. Un salvataggio fatto in fase missioni ha `advisingCouncilors` vuoto: la missione appena assegnata sta in `activeMission` (TIMissionState, `templateName` Advise e `target`) e vale dalla risoluzione.
+- **Regioni sviluppate dall'Economia** (`OnEconomyPriorityComplete`, `CacheRegionValues`): ogni completamento fa un passo, nell'ordine, verso una regione petrolifera (500, regioni `oilCapable`, finché c'è petrolio), mineraria (750, `mineCapable`) o economica centrale (1200, regione con quota del PIL nazionale **sopra** 500 mld). Il contatore è della regione e il gioco lo mostra («Current progress: x/1200»); fra le candidate va avanti quella col contatore più alto, poi la più ricca. Senza candidate il passo si perde. Una regione che diventa economica centrale **smette di essere di risorse**.
+- **Crescita del pro capite e taglia**: K = 3 × tecnologie + 1,5 × regioni di risorse + 1,5 × regioni economiche centrali + 0,5 × democrazia + istruzione, × scala di popolazione. Al mese Δpc = (pc / 20)^0,35 × K × E (E = quota di IP sull'Economia × (1 + bonus) × (1 + Consiglia)): gli IP crescono con (pop × pc)^0,35 e la scala con pop^−0,35, quindi **la popolazione si elide**. Le regioni economiche centrali si contano su tutta la nazione: sono l'unica economia di scala, e dividere una nazione le divide. Verificato col registro del gioco (`tracker_GDPChangeReason_CurrentTrackingPeriod`, voce EconomyPriority) sui salvataggi di vindicator117: `python -m ticore.yass <salvataggi>`.
+- **Tecnologie sull'Economia**: base, risorse e regioni economiche centrali passano per `SumEffectsModifiers` della fazione col punto esecutivo (contesti `Economy_*PCGDP*`); oggi solo `Effect_Economy_BasePCGDPIncrease02`, ×1,02 alla base per tecnologia.
+- **Laboratori in orbita bassa** (`SumLEOHabPriorityBonuses`): moduli attivi (completati, alimentati, non in smantellamento) delle stazioni della fazione in orbita bassa terrestre con la regola della priorità (`LEOBonusEconomy`: Nanofabbrica 0,02, Complesso di nanoproduzione 0,05; `LEOBonusKnowledge`...), sommati e tagliati a **0,3** (`LEOHabModulePriorityBonusCap`). Entrano nel bonus della fazione come org e tratti. Le stazioni della fazione sono i `TIHabState` con `faction` nostra, `habType` Station e `inEarthLEO` (il campo `habs` di TIFactionState non c'è).
+- **Costo dei punti di controllo, K**: `fixedPCGDPToRaiseBaseCPMaintenanceCostBy1` = PIL mondiale a inizio campagna × 6,26e−6, fissato una volta per partita (`scaleCPMaintenanceWithStartingGDP`, vero in tutti gli scenari); prima 1 mld fisso, e i vecchi salvataggi ModernScenario tornano a 1 mld al caricamento (`repairCPMaintenanceScaling`). La nostra 2026: 0,994 mld; un avvio 2003: 0,334 mld (CP ×1,9 a parità di PIL). Senza il campo: 1 mld (`model.cp_gdp_scale`).
+- **Data della partita**: `TITimeState.currentDateTime`. La stringa `gameTimeString` dei metadati segue la lingua del sistema (16/01/2027 da noi, 7/1/2060 negli Stati Uniti): solo per mostrarla.
+- **Crescita della popolazione** (`TIRegionState.get_annualPopulationGrowth`, al mese `GrowPopulationByMonth`): % annua per regione = 4,498 + max(−4,498, −0,418 × istruzione) − 0,0625 × coesione + 9,81e−6 × min(**180.000**, pro capite) − 0,116 × √|latitudine| + `annualPopGrowthModifier` della regione × max(0, (20 − anni di campagna)/20) + `popGrowthModifier` della nazione − xenoformazione/200 − 4 × esplosioni nucleari, fra −10 e 10, meno il clima sopra 8 °C di anomalia (non ricostruito). Latitudine da `TIMapRegionTemplate`, anni = `daysInCampaign` / 365,24. Il PIL cresce col pro capite della regione. Verificato sui salvataggi di vindicator da 8 a 12 anni: entro lo 0,5% sulle nazioni grandi.
+- **Annessione** (`TINationState.TransferRegionControlTo`, regione per regione): il PIL segue la regione; istruzione, disordini, coesione, disuguaglianza e opinione pubblica diventano la media pesata per popolazione; −0,25 di coesione per regione annessa (`cohesionHitFromRegionAnnexation`), +0,25 × scala di disuguaglianza per regione di risorse o colonia. La democrazia resta quella di chi annette (`AbsorbNation` la alza solo se chi entra ne ha più di 1 punto in più).
+- **Tetto del Controllo missioni** (`TIRegionState.get_maxMissionControl`): per regione max(MC attuale, 1 + ⌊PIL regionale / max(200, 300 − 6 × istruzione)⌋ mld). Il PIL regionale è la quota di popolazione pesata (CER e regioni risorse ×1,25, colonie ×0,5). La priorità MC è valida con programma spaziale (anche della federazione) e almeno una regione sotto il tetto. Il wiki non riporta questa formula.
 
 ## Cosa c'e' in cantiere
 

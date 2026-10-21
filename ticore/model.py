@@ -605,11 +605,43 @@ def _global_values(g):
     return next(iter(g.state("TIGlobalValuesState").values()), {})
 
 
+CP_GDP_SCALE_FIXED = 1e9      # TIGlobalValuesState.get_pcgdpToRaiseBaseCPMaintenanceCostBy1
+
+
+def cp_gdp_scale(g):
+    """K del costo dei punti di controllo (`get_pcgdpToRaiseBaseCPMaintenanceCostBy1`).
+    Il gioco lo fissa una volta per campagna: PIL mondiale a inizio partita x
+    6,26e-6 (`scaleCPMaintenanceWithStartingGDP`, vero in tutti gli scenari);
+    prima era 1 mld fisso, e i vecchi salvataggi ModernScenario vengono
+    riportati a 1 mld al caricamento (`repairCPMaintenanceScaling`). Senza il
+    campo (salvataggi di versioni vecchie) vale il valore fisso."""
+    k = _global_values(g).get("fixedPCGDPToRaiseBaseCPMaintenanceCostBy1") or 0
+    return k if k > 0 else CP_GDP_SCALE_FIXED
+
+
+def leo_modules(g, faction=None):
+    """Moduli attivi delle stazioni della fazione in orbita bassa terrestre
+    (TIFactionState.get_LEOStations, TIHabState.ActiveModules: completati,
+    non distrutti ne' in smantellamento, alimentati)."""
+    fid = ((faction or g.me).get("ID") or {}).get("value")
+    sectors, modules = g.state("TISectorState"), g.state("TIHabModuleState")
+    out = []
+    for h in g.state("TIHabState").values():
+        if (h.get("faction") or {}).get("value") != fid or h.get("habType") != "Station"                 or not h.get("inEarthLEO") or h.get("destroyed") or h.get("archived"):
+            continue
+        for sref in h.get("sectors") or []:
+            for mref in (sectors.get(sref.get("value")) or {}).get("habModules") or []:
+                m = modules.get(mref.get("value")) or {}
+                if m.get("templateName") and m.get("constructionCompleted") and m.get("powered")                         and not m.get("destroyed") and not m.get("decommissioning"):
+                    out.append(m["templateName"])
+    return out
+
+
 def cp_cost(g, n):
     """Costo di un punto di controllo della nazione `n` (ControlPointMaintenanceCost),
     col moltiplicatore della data d'inizio (CPMaintenanceModifier): 1 negli
     scenari base, 0,7 in Broken Earth (DLC Dark Skies)."""
-    k = _global_values(g).get("fixedPCGDPToRaiseBaseCPMaintenanceCostBy1") or 0
+    k = cp_gdp_scale(g)
     num = n.get("numControlPoints") or len(n.get("controlPoints") or [])
     if k <= 0 or not num or n.get("alienNation"):
         return 0.0
@@ -645,10 +677,13 @@ def cp_capacity(g):
     # tengono conto, e l'interfaccia lo dice
     unknown = sorted({n for n in names if n not in tpl})
     cap = base + councilors + effects
+    tpl_mod = gamedata.templates()["habModules"]
     return {
         "used": round(used, 2), "cap": cap, "free": round(cap - used, 2),
         "base": base, "councilors": councilors, "effects": effects,
-        "habsMissing": bool(g.me.get("habs")),
+        # moduli che alzano il tetto (LEOControlPointCapacity): non li calcoliamo
+        "habsMissing": any("LEOControlPointCapacity" in ((tpl_mod.get(m) or {}).get("specialRules") or [])
+                           for m in leo_modules(g)),
         "unknownEffects": unknown,
     }
 
@@ -659,9 +694,12 @@ def alien_sites(g, lang="ita"):
     for e in (g.me.get("knownAlienSites") or []):
         rid = (e.get("Key") or {}).get("value")
         d = e.get("Value") or {}
+        r = g.regions.get(rid) or {}
         out.append({
             "regionId": rid,
             "region": nm.region_label(rid),
+            "regionName": nm.region(r) if r else None,
+            "nation": nm.nation(g.ref(r, "nation", g.nations)) if r else None,
             "since": "%02d/%02d/%04d" % (d.get("day", 0), d.get("month", 0), d.get("year", 0)),
             "sinceKey": "%04d-%02d-%02d" % (d.get("year", 0), d.get("month", 0), d.get("day", 0)),
         })

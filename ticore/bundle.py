@@ -130,6 +130,13 @@ SLIM_FIELDS = {
     # escono (ticore/profiles.py); niente aspetto, voce, luogo di nascita
     "councilors": ("dataName", "personalName", "familyName", "type", "traits",
                    "randomized", "alien", "randomizeTraits", "allowedIdeologies", "debugOnly"),
+    # YASS: quali regioni l'Economia puo' sviluppare in petrolio o miniere, e la
+    # latitudine (dalla regione della mappa) per la crescita della popolazione
+    "regions": ("dataName", "oilCapable", "mineCapable", "mapRegionName"),
+    "mapRegions": ("dataName", "latitude"),
+    # YASS: la sostenibilita' migliore (yass.best_sustainability) e il
+    # modificatore della crescita della popolazione
+    "nations": ("dataName", "greenEconomy", "popGrowthModifier"),
     "habSites": ("dataName", "miningProfileName"),
     "spaceBodies": ("dataName", "barycenterName", "objectType", "mass_kg", "density_gcm3",
                     "semiMajorAxis_AU", "effectToExplore", "alternativeEffectToExplore",
@@ -258,7 +265,7 @@ def check(save_path=None):
     dall'estratto: va aggiunta a KEEP_PREFIXES/KEEP_PATTERNS.
     """
     import tempfile
-    from . import factions, mining, missions, model, save, space, techs
+    from . import factions, mining, missions, model, save, space, techs, yass
     g = save.Game(save_path or paths.latest_save()[0])
 
     def run():
@@ -273,6 +280,7 @@ def check(save_path=None):
                 "space": space.overview(g, lang),
                 "mining": mining.overview(g, lang),
                 "techs": techs.overview(g, lang),
+                "yass": yass.overview(g, lang),
                 "details": {n["id"]: model.nation_detail(g, n["id"], lang)
                             for n in model.nations(g, lang)},
             }
@@ -284,6 +292,18 @@ def check(save_path=None):
         build(d)
         load(d)                         # dall'estratto
         extract = run()
+        # come nel browser: niente cartella del gioco. Qui contano solo le
+        # eccezioni (chi legge un file del gioco senza l'estratto si rompe qui
+        # e non in produzione); i valori possono cambiare, per esempio senza i
+        # preset installati nel gioco
+        real_template_dir = paths.template_dir
+        paths.template_dir = lambda: None
+        try:
+            run()
+        except Exception as e:          # noqa: BLE001 - va riportato, non nascosto
+            raise SystemExit(f"Senza la cartella del gioco (come nel browser) si rompe: {e!r}")
+        finally:
+            paths.template_dir = real_template_dir
     gamedata.use_game_files()
     return _diff(full, extract)
 

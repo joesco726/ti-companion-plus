@@ -1,5 +1,6 @@
 # Python
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *.egg-info/
 build/
@@ -33,4 +34,5 @@ Thumbs.db
 # (deploy/ ha una copia anche sul server, in ~/terrainvicta-deploy-backup)
 ROADMAP.md
 deploy/
+note/
 

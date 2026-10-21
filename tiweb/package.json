@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3033",
     "build": "next build",
+    "test": "node --test lib/*.test.ts",
     "build:web": "node scripts/build-web.mjs",
     "start": "next start",
     "lint": "eslint",
