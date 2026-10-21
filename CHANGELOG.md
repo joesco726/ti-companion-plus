@@ -72,6 +72,10 @@ the raw values next to it.
 - **Stars on prospected sites.** ★ next to a site's class resources (e.g. water +
   volatiles for a Common Carbonaceous) when their true sum beats the top of the range
   the game showed for that class on that body before the probe.
+- **Area checkboxes** above the sites table, with the areas of the game's Intel screen
+  Location filter: Mercury, Luna, Inner System Asteroids, Mars, Inner / Middle / Outer
+  Belt, Jupiter, Saturn, Centaurs, Uranus, Neptune, Kuiper Belt Objects. As in the game,
+  a planet includes its moons. Each shows how many sites it has; the choice is remembered.
 - **Mine network stat**, "17/24": active mines against how many the network supports
   without extra mission control. Neutral below the cap, green at it, amber 1–4 over,
   red 5+ over.

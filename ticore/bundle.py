@@ -71,6 +71,8 @@ KEEP_PREFIXES = (
     # scheda Estrazione: profili minerari, bonus di estrazione delle org
     "TIMiningProfileTemplate.displayName.",
     "UI.OrgTargeting.SpaceMiningBonus",
+    "UI.Habs.InnerSystemAsteroids", "UI.Habs.InnerBelt", "UI.Habs.MidBelt",
+    "UI.Habs.FarBelt", "UI.Habs.Centaurs", "UI.Habs.KBO",
 )
 # cause delle variazioni nazionali (`tracker_*ChangeReason_*`): chiavi nude,
 # es. `CohesionReason_Annexation`

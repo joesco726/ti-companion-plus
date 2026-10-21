@@ -15,6 +15,8 @@ interface Yield { value: number; min?: number; max?: number }
 interface Site {
   id: string; name: string; profile: string;
   body: { id: string; name: string; type: string | null; au: number | null };
+  /** voci del filtro per zona (mining.REGION_OPTIONS) che mostrano il sito */
+  regions: string[];
   prospected: boolean; probeEnRoute: boolean; reachable: boolean;
   yields: Record<ResKey, Yield>; value: number;
   occupant: (FactionRef & { mine: boolean }) | null;
@@ -46,6 +48,7 @@ interface Mining {
   resources: Res[];
   sites: Site[];
   prospectedBodies: number;
+  regions: { id: string; label: string }[];
   orgs: Org[];
   orgMiningBonus: number;
   labels: { miningBonus: string | null };
@@ -268,6 +271,9 @@ function WindowBand({ band, setBand }: { band: [number, number]; setBand: (b: [n
   );
 }
 
+const isStringList = (v: unknown): v is string[] =>
+  Array.isArray(v) && v.every((x) => typeof x === "string");
+
 function Sites({ data, reload }: { data: Mining; reload: () => void }) {
   const { t } = useSettings();
   const m = t.mining;
@@ -281,6 +287,8 @@ function Sites({ data, reload }: { data: Mining; reload: () => void }) {
   const [reachable, setReachable] = useState(true);
   const [hideOccupied, setHideOccupied] = useState(false);
   const [all, setAll] = useState(false);
+  // zone spente, non accese: una zona nuova in un aggiornamento parte visibile
+  const [off, setOff] = usePersistentState<string[]>("mining.regionsOff", [], isStringList);
   const { game, refreshAlerts } = useSettings();
   const launch = useMemo(() => Object.fromEntries(data.launch.map((b) => [b.id, b])), [data.launch]);
 
@@ -312,13 +320,25 @@ function Sites({ data, reload }: { data: Mining; reload: () => void }) {
     () => new Map(data.sites.map((s) => [s.id, siteValue(s, data.resources, vm)])),
     [data.sites, data.resources, vm]);
 
-  const rows = useMemo(() => {
-    const val = (s: Site) => values.get(s.id) ?? 0;
+  // gli altri filtri prima della zona: i conteggi accanto alle caselle dicono
+  // quanti siti accenderebbe ogni zona
+  const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const xs = data.sites.filter((s) =>
+    return data.sites.filter((s) =>
       (!reachable || s.reachable)
       && (!hideOccupied || !s.occupant)
       && (!needle || s.name.toLowerCase().includes(needle) || s.body.name.toLowerCase().includes(needle)));
+  }, [data.sites, q, reachable, hideOccupied]);
+  const perRegion = useMemo(() => {
+    const n = new Map<string, number>();
+    for (const s of filtered) for (const r of s.regions) n.set(r, (n.get(r) ?? 0) + 1);
+    return n;
+  }, [filtered]);
+
+  const rows = useMemo(() => {
+    const val = (s: Site) => values.get(s.id) ?? 0;
+    // come nel gioco basta una zona accesa; un sito senza zona resta sempre
+    const xs = filtered.filter((s) => !s.regions.length || s.regions.some((r) => !off.includes(r)));
     const key = (s: Site): number | string => {
       switch (sort) {
         case "site": return s.name;
@@ -337,7 +357,7 @@ function Sites({ data, reload }: { data: Mining; reload: () => void }) {
       const c = typeof ka === "string" ? ka.localeCompare(kb as string) : ka - (kb as number);
       return c * dir || val(b) - val(a);
     });
-  }, [data.sites, sort, asc, q, reachable, hideOccupied, launch, values]);
+  }, [filtered, off, sort, asc, launch, values]);
   const shown = all ? rows : rows.slice(0, LIMIT);
   const th = { sort, asc, onSort: sortBy };
 
@@ -391,6 +411,23 @@ function Sites({ data, reload }: { data: Mining; reload: () => void }) {
             </Tip>
           </span>
         )}
+      </div>
+      <div className="flex gap-x-3 gap-y-1.5 flex-wrap items-center mb-3 text-[12.5px]">
+        <Tip title={m.regions} width={340} content={<p className="m-0">{m.regionsHint}</p>}>
+          <span className="text-faint underline decoration-dotted">{m.regions}</span>
+        </Tip>
+        {data.regions.map((r) => (
+          <label key={r.id} className="flex items-center gap-1.5 text-dim cursor-pointer">
+            <input type="checkbox" checked={!off.includes(r.id)}
+              onChange={(e) => setOff(e.target.checked ? off.filter((x) => x !== r.id) : [...off, r.id])} />
+            {r.label}
+            <span className="text-faint text-[11px]">{perRegion.get(r.id) ?? 0}</span>
+          </label>
+        ))}
+        <button type="button" className="text-accent text-[12px] hover:text-ink"
+          onClick={() => setOff(off.length ? [] : data.regions.map((r) => r.id))}>
+          {off.length ? m.regionsAll : m.regionsNone}
+        </button>
       </div>
       <div className="flex gap-x-4 gap-y-1.5 flex-wrap items-center mb-3">
         <WindowBand band={watch.band} setBand={(b) => saveWatch({ ...watch, band: b }, 500)} />

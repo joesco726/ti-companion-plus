@@ -42,7 +42,7 @@ schermata del gioco elenca anche il pool non assegnato della fazione
 (`UI.OrgTargeting.CouncilorTip`).
 """
 
-from . import gamedata, transfer
+from . import gamedata, texts, transfer
 from .council import org_view
 from .factions import COUNCILOR_GATES, GATES, _faction_ref, _intel_on
 from .names import Namer
@@ -199,6 +199,106 @@ def _system_au(bodies_tpl, name):
     return None
 
 
+# Filtro per zona, dal filtro «Posizione» dei siti di habitat nella schermata
+# Intelligence (IL di IntelScreenController e TISpaceBodyState). Il gioco
+# elenca TargetSelectionTool.primaryNavigatorBodyTemplateNames senza il Sole:
+# un pianeta (o la Luna) vale per i siti sul corpo e sulle sue lune («Marte»
+# comprende Phobos e Deimos); un asteroide da' nome al suo gruppo
+# (433 Eros -> UI.Habs.InnerSystemAsteroids) e la voce prende tutto il gruppo,
+# lune comprese. Scelta nostra: niente Venere e Terra, che non hanno siti
+# («Terra» nel gioco mostra quelli della Luna, che ha la sua voce).
+REGION_OPTIONS = (
+    ("Mercury", None), ("Luna", None), ("innerSystem", {"innerSystem"}), ("Mars", None),
+    ("innerBelt", {"innerBelt"}), ("midBelt", {"midBelt"}), ("farBelt", {"farBelt"}),
+    ("Jupiter", None), ("Saturn", None), ("centaurs", {"centaurs"}), ("Uranus", None),
+    ("Neptune", None), ("kbo", {"kbo"}),
+)
+REGION_LABELS = {"innerSystem": "UI.Habs.InnerSystemAsteroids", "innerBelt": "UI.Habs.InnerBelt",
+                 "midBelt": "UI.Habs.MidBelt", "farBelt": "UI.Habs.FarBelt",
+                 "centaurs": "UI.Habs.Centaurs", "kbo": "UI.Habs.KBO"}
+INNER_MIDDLE_BELT = 2.5             # TIGlobalConfig.innerMiddleBeltLine (UA), assente dal JSON
+MIDDLE_OUTER_BELT = 2.82            # TIGlobalConfig.middleOuterBeltLine
+_SMALL = {"Asteroid", "AsteroidalMoon", "DwarfPlanet", "Comet"}
+_MOONS = {"PlanetaryMoon", "AsteroidalMoon"}
+
+
+def _orbit(t):
+    """Semiasse maggiore, perielio e afelio in UA."""
+    a = t.get("semiMajorAxis_AU") or 0.0
+    e = t.get("eccentricity") or 0.0
+    return a, a * (1 - e), a * (1 + e)
+
+
+def _own_groups(t, bodies_tpl):
+    """Gruppi di un corpo che orbita il Sole, senza contare le lune
+    (innerSystemAsteroid & co. con includeSatellites falso). I gruppi oltre
+    Giove non escludono gli asteroidi interni: un corpo puo' stare in due."""
+    # senza orbita nel template (Leleakuhonua & co., «NO ORBITS», nessun sito)
+    if t.get("barycenterName") != "Sol" or not t.get("semiMajorAxis_AU"):
+        return set()
+    a, peri, _ = _orbit(t)
+    typ = t.get("objectType")
+    mars_apo = _orbit(bodies_tpl.get("Mars") or {})[2]
+    jup_peri = _orbit(bodies_tpl.get("Jupiter") or {})[1]
+    nep_apo = _orbit(bodies_tpl.get("Neptune") or {})[2]
+    out = set()
+    if typ in _SMALL:
+        inner = peri <= mars_apo
+        if inner:
+            out.add("innerSystem")
+        elif mars_apo < a < INNER_MIDDLE_BELT:
+            out.add("innerBelt")
+        elif INNER_MIDDLE_BELT <= a < MIDDLE_OUTER_BELT:
+            out.add("midBelt")
+        elif MIDDLE_OUTER_BELT <= a < jup_peri:
+            out.add("farBelt")
+    if typ in _SMALL or typ == "PlanetaryMoon":
+        if jup_peri < a <= nep_apo:
+            out.add("centaurs")
+        elif a > nep_apo:
+            out.add("kbo")
+    return out
+
+
+def _sun_orbiting(name, bodies_tpl):
+    """GetSunOrbitingRelatedObject: risale le orbite fino al corpo che gira
+    attorno al Sole."""
+    seen = set()
+    while name and name not in seen:
+        seen.add(name)
+        parent = (bodies_tpl.get(name) or {}).get("barycenterName")
+        if parent in (None, "Sol"):
+            return name
+        name = parent
+    return name
+
+
+def body_regions(name, bodies_tpl):
+    """Le voci del filtro Posizione (REGION_OPTIONS) che mostrano i siti del corpo."""
+    t = bodies_tpl.get(name) or {}
+    parent = t.get("barycenterName")
+    # con includeSatellites: una luna sta nel gruppo del corpo attorno a cui gira
+    groups = _own_groups(t, bodies_tpl) if parent == "Sol" else \
+        _own_groups(bodies_tpl.get(parent) or {}, bodies_tpl)
+    top = _sun_orbiting(name, bodies_tpl) if t.get("objectType") in _MOONS else None
+    return [opt for opt, gs in REGION_OPTIONS
+            if ((gs & groups) if gs else (opt == name or opt == top))]
+
+
+def _group_label(group, lang):
+    key = REGION_LABELS[group]
+    return gamedata.strings(lang).get(key) or gamedata.strings("en").get(key) \
+        or texts.t("mining.region." + group, lang)
+
+
+def regions(lang):
+    """Voci del filtro coi nomi del gioco: il corpo per pianeti e Luna, il
+    gruppo per gli asteroidi."""
+    return [{"id": opt, "label": _group_label(next(iter(gs)), lang) if gs else
+             gamedata.loc(lang, "TISpaceBodyTemplate", "displayName", opt)}
+            for opt, gs in REGION_OPTIONS]
+
+
 def _sites(g, lang, my_id, nm):
     tpl = gamedata.templates()
     site_tpl, body_tpl, profiles = tpl["habSites"], tpl["spaceBodies"], tpl["miningProfiles"]
@@ -259,6 +359,7 @@ def _sites(g, lang, my_id, nm):
                                           bname, b.get("displayName")),
                      "type": bt.get("objectType"),
                      "au": _system_au(body_tpl, bname)},
+            "regions": body_regions(bname, body_tpl),
             "profile": gamedata.loc(lang, "TIMiningProfileTemplate", "displayName",
                                     profile.get("dataName"), profile.get("friendlyName")),
             "prospected": prospected,
@@ -412,6 +513,7 @@ def overview(g, lang="ita"):
                            price=market.get(key) or 0) for k, key in RESOURCES],
         "sites": sites,
         "prospectedBodies": len({s["body"]["id"] for s in sites if s["prospected"]}),
+        "regions": regions(lang),
         "orgs": orgs,
         "orgMiningBonus": round(mining_now, 3),
         "labels": {"miningBonus": gamedata.loc(lang, "UI", "OrgTargeting", "SpaceMiningBonus", None),

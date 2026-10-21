@@ -77,6 +77,14 @@ TEXTS = {
     "alert.orgprofile.title": {"it": "Org per «%s»: %s", "en": "Org matches «%s»: %s"},
     "alert.orgprofile.detail": {"it": "Livello %s. Soddisfa: %s. Può tenerla: %s.",
                                 "en": "Tier %s. Meets: %s. Can hold it: %s."},
+    # filtro per zona dei siti (mining.regions): ripieghi se l'estratto non ha
+    # ancora le chiavi UI.Habs.*
+    "mining.region.innerSystem": {"it": "Asteroidi del sistema interno", "en": "Inner System Asteroids"},
+    "mining.region.innerBelt": {"it": "Fascia interna", "en": "Inner Belt"},
+    "mining.region.midBelt": {"it": "Fascia centrale", "en": "Middle Belt"},
+    "mining.region.farBelt": {"it": "Fascia esterna", "en": "Outer Belt"},
+    "mining.region.centaurs": {"it": "Centauri", "en": "Centaurs"},
+    "mining.region.kbo": {"it": "Oggetti della fascia di Kuiper", "en": "Kuiper Belt Objects"},
     "alert.mines.title": {"it": "Rete di miniere: %s/%s", "en": "Mine network: %s/%s"},
     "alert.mines.detail": {"it": "Puoi avere ancora %s miniere senza controllo missioni in più. Costruite ma non attive: %s.",
                            "en": "You can run %s more mines without extra mission control. Built but not active: %s."},
